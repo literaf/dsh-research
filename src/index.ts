@@ -105,10 +105,13 @@ export function apply(ctx: Context, config: Config): void {
   ctx.systemPrompt.section({
     name: 'pack:ai4scholar-research',
     order: resolved.promptOrder,
-    // A provider, not a string: whether the literature tools exist is decided
-    // by the composition around this pack and can change while it runs.
+    // A provider, not a string: which services exist around this pack is
+    // decided by the composition and can change while it runs. `skills` is
+    // optional, so the guidance advertises the pack's skills only while the
+    // registry is up — otherwise it would route the model at skills that
+    // `ctx.inject` never got to register.
     text: () => buildGuidance({
-      skills: registered,
+      skills: ctx.get('skills') !== undefined ? registered : [],
       conventions,
       literatureTools: ctx.get('tools')?.get(LITERATURE_PROBE_TOOL) !== undefined,
     }) ?? '',

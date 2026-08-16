@@ -19,6 +19,9 @@ function fakeContext(options: { skillsService?: boolean; tools?: string[] } = {}
     },
     get(name: string) {
       if (name === 'tools') return { get: (tool: string) => (registered.has(tool) ? {} : undefined) }
+      // The guidance reads `skills` to decide whether the pack's skills exist,
+      // so the fake must report the same absence its `inject` simulates.
+      if (name === 'skills') return options.skillsService === false ? undefined : {}
       return undefined
     },
     inject(deps: string[], callback: (child: unknown) => void) {
@@ -86,10 +89,18 @@ describe('pack mount', () => {
     expect(() => mount({ skillNames: ['nope'] })).toThrow(/unknown skillNames nope/)
   })
 
-  it('still mounts where the skill registry is absent', () => {
+  it('still mounts where the skill registry is absent, and stops advertising skills', () => {
     const fake = mount({}, { skillsService: false })
     expect(fake.skills).toHaveLength(0)
     expect(fake.sections).toHaveLength(1)
+    // Routing the model at skills nothing registered makes it call a loader
+    // that cannot resolve them, so the guidance drops the whole list.
+    const text = sectionText(fake.sections[0]!)
+    for (const skill of BUNDLED_SKILLS) expect(text).not.toContain(skill.name)
+    expect(text).not.toContain('先加载对应技能')
+    // The rest of the guidance survives: conventions and the install hint.
+    expect(text).toContain(DEFAULT_CONVENTIONS.bibliography)
+    expect(text).toContain('dsh plugin --profile web add dsh-ai4scholar')
   })
 })
 
