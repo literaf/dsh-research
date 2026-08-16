@@ -22,7 +22,26 @@ The **orchestration layer** that turns [DeepSeek Harness](https://github.com/dee
 
 **One workflow section** in the system prompt: search before asserting, which task loads which skill, and a workspace layout — papers in `papers/`, citations in `references.bib`, reading notes in `notes/` — so the next session can pick up where the last one stopped.
 
-The section **adapts to the composition**: with `dsh-ai4scholar` present it points the model at the search tools; without it, it tells the user how to install them.
+## What the agent does with it
+
+A request like *"find the strongest recent evidence for X, then draft an introduction around it"* runs as one chain instead of four disconnected answers:
+
+1. The guidance forbids answering from memory, so the agent calls `search_papers` first and works from what came back.
+2. It reads the full text of the papers that matter with the `read_*` tools, and files them under `papers/` with one note each in `notes/`.
+3. `ai4scholar-introduction-writing` loads before any prose is written, so the draft follows background → gap → contribution → signposting rather than improvised paragraphs.
+4. Every work it cites lands in `references.bib`, and `ai4scholar-reference-audit` can check that list against the text before submission.
+
+The next session starts from those three files, so the work accumulates instead of restarting.
+
+## How it adapts
+
+The guidance is rebuilt at every prompt assembly, so it states what is actually available right now:
+
+| Composition | What the pack contributes |
+|---|---|
+| `dsh-research` + `dsh-ai4scholar` | Skills, plus a workflow that routes the model to the literature tools by name |
+| `dsh-research` alone | Skills, plus a workflow that tells the user how to install the literature tools before relying on any citation |
+| A profile without a skill registry | The workflow only. It stops advertising the skills rather than sending the model after a loader that cannot resolve them |
 
 ## Install
 
@@ -48,11 +67,16 @@ The bundle inserts one row (`id: research-pack`). Override it from your profile'
     papersDir: papers/
     bibliographyFile: references.bib
     notesDir: notes/
+    language: zh                  # zh | en — guidance and skill catalog copy
 ```
+
+### Language
+
+`language` selects the language of the workflow section and of each skill's catalog entry. The **skill bodies stay Chinese in both settings** — they are AI4Scholar's originals, kept verbatim so they stay in sync with their published source. Under `language: en` the guidance says so explicitly and tells the model to carry the procedure out but report back in the language the user is writing in.
 
 ## Notes
 
-- Skill bodies are the ones published on [ai4scholar.net](https://ai4scholar.net?src=dsh), embedded through `ctx.skills.register` — no directories to configure.
+- Skill bodies are the ones published on [ai4scholar.net](https://ai4scholar.net?src=dsh), embedded through `ctx.skills.register` — no directories to configure, and written in Chinese (see [Language](#language)).
 - This pack is an **orchestration layer, not a container**: member plugins install beside it and keep their own settings pages, cards, and release cadence.
 - Skill content is MIT licensed; use and adapt freely.
 
