@@ -1,0 +1,84 @@
+{
+  "name": "dsh-research",
+  "version": "0.1.0",
+  "description": "AI4Scholar research pack for DeepSeek Harness (dsh): research skills, literature-first workflow guidance and workspace conventions. Pairs with dsh-ai4scholar for search, full text, citations and figures.",
+  "type": "module",
+  "license": "MIT",
+  "author": "ai4scholar",
+  "homepage": "https://ai4scholar.net?src=dsh",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/literaf/dsh-research-pack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/literaf/dsh-research-pack/issues"
+  },
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "skills",
+    "cordis.patch.yml",
+    "README.md",
+    "README_CN.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh",
+    "ai4scholar",
+    "academic",
+    "research",
+    "skills",
+    "paper-writing",
+    "peer-review"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf lib",
+    "typecheck": "tsc -p tsconfig.json",
+    "pretest": "pnpm run build",
+    "test": "vitest run",
+    "prepare": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run clean && pnpm run typecheck && pnpm run test",
+    "postpublish": "node scripts/sync-mirror.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.1",
+    "@deepseek-ai/dsh-skill": ">=0.1.0-rc.6",
+    "@deepseek-ai/dsh-system-prompt": ">=0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": ">=0.1.0-rc.6",
+    "@deepseek-ai/schemastery": ">=3.18.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.1",
+    "@deepseek-ai/dsh-skill": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-system-prompt": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "3.18.1",
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.8"
+  }
+}

@@ -1,0 +1,18 @@
+# dsh-research bundle layer: one row mounting the research pack.
+#
+# The pack ships skills, workflow guidance and workspace conventions. The
+# capabilities themselves come from plugins installed BESIDE it, so the
+# recommended install is one command with both:
+#
+#   dsh plugin --profile web add dsh-ai4scholar dsh-research
+#
+# Override any field from the profile's own cordis.patch.yml (a patch replaces
+# the whole `config`, so restate every key you keep):
+#
+#   - id: research-pack
+#     config:
+#       skillNames: [ai4scholar-paper-review]
+#       papersDir: literature/
+- insert:
+    - id: research-pack
+      name: dsh-research
