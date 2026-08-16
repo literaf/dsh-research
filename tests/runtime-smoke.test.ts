@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { SystemPrompt } from '@deepseek-ai/dsh-system-prompt'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
-import { BUNDLED_SKILLS } from '../src/index.js'
+import { BUNDLED_SKILLS, skillRouting } from '../src/index.js'
 
 const LIB_ENTRY = new URL('../lib/index.js', import.meta.url)
 
@@ -76,6 +76,26 @@ describe.skipIf(!existsSync(LIB_ENTRY))('built pack in a real composition', () =
     const text = await guidanceText(ctx)
     expect(text).toContain('literature/')
     expect(text).not.toContain('ai4scholar-paper-review')
+  })
+
+  it('registers the English catalog copy through the real registry', async () => {
+    const plugin = await builtPlugin()
+    const ctx = new Context()
+    await ctx.plugin(SystemPrompt, {})
+    await ctx.plugin(SkillRegistry, {})
+
+    await ctx.plugin(plugin, { language: 'en' })
+
+    const listed = await ctx.skills.list()
+    for (const skill of BUNDLED_SKILLS) {
+      const summary = listed.find((s) => s.name === skill.name)
+      expect(summary?.description).toBe(skillRouting(skill, 'en').description)
+    }
+    // No literature tools here, so the English branch is the install hint.
+    const text = await guidanceText(ctx)
+    expect(text).toContain('No literature tools are installed')
+    expect(text).toContain('written in Chinese')
+    expect(text).not.toContain('本工作台')
   })
 
   it('mounts without the skill registry and keeps the skills out of the guidance', async () => {

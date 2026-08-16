@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { PromptSection } from '@deepseek-ai/dsh-system-prompt'
 import type { SkillRegistration } from '@deepseek-ai/dsh-skill'
-import { BUNDLED_SKILLS, Config, DEFAULT_CONVENTIONS, apply, buildGuidance, loadSkillContent } from '../src/index.js'
+import { BUNDLED_SKILLS, Config, DEFAULT_CONVENTIONS, apply, buildGuidance, loadSkillContent, skillRouting } from '../src/index.js'
 import type { Config as ConfigType } from '../src/index.js'
 
 /** Minimal stand-in for the plugin context: records skill and prompt registrations. */
@@ -63,6 +63,8 @@ describe('pack mount', () => {
       expect(skill.source).toBe('bundled')
       expect(skill.description.length).toBeGreaterThan(10)
       expect(skill.whenToUse).toBeDefined()
+      // Default language: the catalog copy the model routes on is Chinese.
+      expect(skill.description).toBe(skillRouting(BUNDLED_SKILLS.find(s => s.name === skill.name)!, 'zh').description)
       // Bodies come from the shipped markdown, with the frontmatter and the
       // other harnesses' `@name` invocation syntax removed.
       expect(skill.content.length).toBeGreaterThan(1000)
@@ -77,6 +79,18 @@ describe('pack mount', () => {
   it('every bundled skill name is a valid dsh skill id', () => {
     for (const skill of BUNDLED_SKILLS) expect(skill.name).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     expect(new Set(BUNDLED_SKILLS.map(s => s.name)).size).toBe(BUNDLED_SKILLS.length)
+  })
+
+  it('carries routing copy in every supported language', () => {
+    for (const skill of BUNDLED_SKILLS) {
+      for (const language of ['zh', 'en'] as const) {
+        const routing = skillRouting(skill, language)
+        expect(routing.description.length).toBeGreaterThan(20)
+        expect(routing.whenToUse.length).toBeGreaterThan(20)
+      }
+      // Distinct copy, not the same string reused for both languages.
+      expect(skillRouting(skill, 'en').description).not.toBe(skillRouting(skill, 'zh').description)
+    }
   })
 
   it('honors the toggles and the skill subset', () => {
@@ -130,8 +144,32 @@ describe('guidance', () => {
     const text = buildGuidance({ skills: BUNDLED_SKILLS, literatureTools: true })
     for (const skill of BUNDLED_SKILLS) {
       expect(text).toContain(skill.name)
-      expect(text).toContain(skill.whenToUse)
+      expect(text).toContain(skillRouting(skill, 'zh').whenToUse)
     }
+  })
+
+  it('switches guidance and catalog copy to English, and flags the Chinese bodies', () => {
+    const fake = mount({ language: 'en' }, { tools: ['search_papers'] })
+    const text = sectionText(fake.sections[0]!)
+    expect(text).toContain('Search before asserting')
+    expect(text).toContain('search_papers')
+    // The bodies stay Chinese, so the model is told to translate its report.
+    expect(text).toContain('written in Chinese')
+    for (const skill of BUNDLED_SKILLS) expect(text).toContain(skillRouting(skill, 'en').whenToUse)
+    expect(text).not.toContain('先检索再断言')
+
+    // The registered catalog entries follow the same language.
+    for (const registration of fake.skills) {
+      const skill = BUNDLED_SKILLS.find(s => s.name === registration.name)!
+      expect(registration.description).toBe(skillRouting(skill, 'en').description)
+      expect(registration.whenToUse).toBe(skillRouting(skill, 'en').whenToUse)
+    }
+  })
+
+  it('states the English install hint when the literature tools are absent', () => {
+    const text = sectionText(mount({ language: 'en' }).sections[0]!)
+    expect(text).toContain('No literature tools are installed')
+    expect(text).toContain('dsh plugin --profile web add dsh-ai4scholar')
   })
 })
 

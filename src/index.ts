@@ -12,12 +12,13 @@ import Schema from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-skill'
-import { BUNDLED_SKILLS, loadSkillContent } from './skills.js'
+import { BUNDLED_SKILLS, loadSkillContent, skillRouting } from './skills.js'
+import type { GuidanceLanguage } from './skills.js'
 import { DEFAULT_CONVENTIONS, LITERATURE_PROBE_TOOL, buildGuidance } from './prompt.js'
 import type { WorkspaceConventions } from './prompt.js'
 
-export { BUNDLED_SKILLS, loadSkillContent } from './skills.js'
-export type { BundledSkill } from './skills.js'
+export { BUNDLED_SKILLS, loadSkillContent, skillRouting } from './skills.js'
+export type { BundledSkill, GuidanceLanguage, SkillRouting } from './skills.js'
 export { buildGuidance, DEFAULT_CONVENTIONS, LITERATURE_PROBE_TOOL } from './prompt.js'
 export type { GuidanceInput, WorkspaceConventions } from './prompt.js'
 
@@ -45,6 +46,8 @@ export interface Config {
   bibliographyFile?: string
   /** Directory for per-paper reading notes. */
   notesDir?: string
+  /** Language of the guidance and of the skill catalog copy. */
+  language?: GuidanceLanguage
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -56,6 +59,7 @@ export const Config: Schema<Config> = Schema.object({
   papersDir: Schema.string().default(DEFAULT_CONVENTIONS.papers).description('Directory for papers and extracted text.'),
   bibliographyFile: Schema.string().default(DEFAULT_CONVENTIONS.bibliography).description('BibTeX file for cited works.'),
   notesDir: Schema.string().default(DEFAULT_CONVENTIONS.notes).description('Directory for reading notes.'),
+  language: Schema.union(['zh', 'en'] as const).default('zh').description('Language of the guidance and skill catalog copy; the skill bodies are Chinese either way.'),
 })
 
 /** Complete config after schemastery applies every default. */
@@ -86,10 +90,11 @@ export function apply(ctx: Context, config: Config): void {
     // `skills` is optional: a composition without the registry still gets the guidance.
     ctx.inject(['skills'], (skillCtx) => {
       for (const skill of registered) {
+        const routing = skillRouting(skill, resolved.language)
         skillCtx.skills.register({
           name: skill.name,
-          description: skill.description,
-          whenToUse: skill.whenToUse,
+          description: routing.description,
+          whenToUse: routing.whenToUse,
           // `bundled`: the body ships inside this package, not on the user's disk.
           source: 'bundled',
           content: loadSkillContent(skill, import.meta.url),
@@ -114,6 +119,7 @@ export function apply(ctx: Context, config: Config): void {
       skills: ctx.get('skills') !== undefined ? registered : [],
       conventions,
       literatureTools: ctx.get('tools')?.get(LITERATURE_PROBE_TOOL) !== undefined,
-    }) ?? '',
+      language: resolved.language,
+    }),
   })
 }
