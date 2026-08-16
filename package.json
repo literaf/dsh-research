@@ -8,10 +8,10 @@
   "homepage": "https://ai4scholar.net?src=dsh",
   "repository": {
     "type": "git",
-    "url": "https://github.com/literaf/dsh-research-pack.git"
+    "url": "https://github.com/literaf/dsh-research.git"
   },
   "bugs": {
-    "url": "https://github.com/literaf/dsh-research-pack/issues"
+    "url": "https://github.com/literaf/dsh-research/issues"
   },
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
