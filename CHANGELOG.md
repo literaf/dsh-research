@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-research` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change the skill set).
 
+## [0.1.1] - 2026-08-16
+
+### Fixed
+- `repository` and `bugs` pointed at the pre-rename repository name, so the npm page linked to a repository that does not exist.
+
 ## [0.1.0] - 2026-08-16
 
 ### Added

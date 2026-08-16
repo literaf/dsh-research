@@ -1,6 +1,6 @@
 {
   "name": "dsh-research",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI4Scholar research pack for DeepSeek Harness (dsh): research skills, literature-first workflow guidance and workspace conventions. Pairs with dsh-ai4scholar for search, full text, citations and figures.",
   "type": "module",
   "license": "MIT",
