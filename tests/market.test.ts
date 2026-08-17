@@ -147,6 +147,29 @@ describe('install flow', () => {
   })
 })
 
+describe('who maintains an entry', () => {
+  it('marks ours by publisher and by repository owner alike', () => {
+    const mine = normalizeCatalog({ items: [{ id: 'a', summary: 's', homepage: 'https://github.com/literaf/x', publisher: { name: 'literaf' } }] })
+    expect(mine.items[0]?.ours).toBe(true)
+    expect(mine.items[0]?.publisher).toBe('literaf')
+  })
+
+  it('does not claim someone else\'s plugin as ours', () => {
+    // The confirmation names the publisher when it is not us, so getting this
+    // wrong would tell a reader we stand behind code we do not maintain.
+    const theirs = normalizeCatalog({
+      items: [{ id: 'b', summary: 's', homepage: 'https://github.com/STARDUSTLC666/dsh-cite', publisher: { name: 'STARDUSTLC666' } }],
+    })
+    expect(theirs.items[0]?.ours).toBe(false)
+    expect(theirs.items[0]?.publisher).toBe('STARDUSTLC666')
+  })
+
+  it('keeps a declared licence distinguishable from a LICENSE file', () => {
+    const declared = normalizeCatalog({ items: [{ id: 'c', summary: 's', homepage: 'https://github.com/x/y', license: 'MIT (declared)' }] })
+    expect(declared.items[0]?.license).toBe('MIT (declared)')
+  })
+})
+
 describe('catalog language', () => {
   it('asks for the feed matching the interface', async () => {
     const asked: string[] = []

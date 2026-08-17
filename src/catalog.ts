@@ -65,6 +65,7 @@ function item(raw: unknown): MarketItem | undefined {
     ...(detail === undefined ? {} : { detail }),
     ...(version === undefined ? {} : { version }),
     ...(license === undefined ? {} : { license }),
+    ...(publisher === undefined ? {} : { publisher }),
     // Our own entries are the ones we can support; the panel says which.
     ours: publisher === 'literaf' || (repoFromUrl(homepage)?.startsWith('literaf/') ?? false),
   }

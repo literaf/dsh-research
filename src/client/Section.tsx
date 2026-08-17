@@ -331,7 +331,11 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
               : (
                 <>
                   <span>{pending.item.summary}</span>
-                  <span>{pending.kind === 'install' ? t('confirmOurs') : t('confirmRemoveBody')}</span>
+                  <span>{pending.kind === 'remove'
+                    ? t('confirmRemoveBody')
+                    : pending.item.ours
+                      ? t('confirmOurs')
+                      : t('confirmThird').replace('{publisher}', pending.item.publisher ?? pending.item.repo.split('/')[0] ?? '')}</span>
                   <span>{t('confirmProfile')}<b>{state.profile}</b>.</span>
                   <span>{t('confirmWillRun')}</span>
                 </>

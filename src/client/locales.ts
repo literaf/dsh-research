@@ -42,6 +42,7 @@ export type MarketLocaleKey =
   | 'confirmProfile'
   | 'confirmWillRun'
   | 'confirmOurs'
+  | 'confirmThird'
   | 'confirmRemoveBody'
   | 'confirmRestartBody'
   | 'confirmYes'
@@ -104,7 +105,8 @@ export const zh: Record<MarketLocaleKey, string> = {
   confirmRestartTitle: '重启 dsh？',
   confirmProfile: '这会写入 profile ',
   confirmWillRun: '将执行：',
-  confirmOurs: '本目录只收录 AI4Scholar 维护的插件。安装会改写 profile 的清单并重装依赖，装完需要重启。',
+  confirmOurs: '这个插件由 AI4Scholar 维护，出了问题可以直接找我们。安装会改写 profile 的清单并重装依赖，装完需要重启。',
+  confirmThird: '这个插件由 {publisher} 维护，不是我们——我们读过它的代码才收录，但它的行为与更新不由我们控制。安装会改写 profile 的清单并重装依赖，装完需要重启。',
   confirmRemoveBody: '会从 profile 中移除该插件，磁盘上的包也会被删除。可以随时重新安装。',
   confirmRestartBody: '当前 dsh 进程会退出，随后自动拉起新的。本页会短暂断开，刷新即可回来；正在进行的对话会中断。',
   confirmYes: '确认',
@@ -161,7 +163,8 @@ export const en: Record<MarketLocaleKey, string> = {
   confirmRestartTitle: 'Restart dsh?',
   confirmProfile: 'This writes into profile ',
   confirmWillRun: 'It will run:',
-  confirmOurs: 'This catalog lists only plugins AI4Scholar maintains. Installing rewrites the profile manifest and reinstalls its dependencies; a restart is needed afterwards.',
+  confirmOurs: 'AI4Scholar maintains this one, so problems with it come back to us. Installing rewrites the profile manifest and reinstalls its dependencies; a restart is needed afterwards.',
+  confirmThird: '{publisher} maintains this one, not us — we read its code before listing it, but neither its behaviour nor its updates are ours to control. Installing rewrites the profile manifest and reinstalls its dependencies; a restart is needed afterwards.',
   confirmRemoveBody: 'The plugin leaves the profile and its package is deleted from disk. You can install it again at any time.',
   confirmRestartBody: 'This dsh process exits and a fresh one is started. The page drops briefly — reload it — and any conversation in progress is interrupted.',
   confirmYes: 'Confirm',

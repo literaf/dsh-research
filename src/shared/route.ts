@@ -68,6 +68,8 @@ export interface MarketItem {
   readonly license?: string
   /** Whether AI4Scholar maintains this entry. */
   readonly ours: boolean
+  /** Who publishes it, named in the confirmation when it is not us. */
+  readonly publisher?: string
 }
 
 /**
