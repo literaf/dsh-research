@@ -128,6 +128,7 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
   const [tab, setTab] = useState<Tab>('discover')
   const [category, setCategory] = useState<string>('')
   const [pending, setPending] = useState<Pending | undefined>(undefined)
+  const [opened, setOpened] = useState<string | undefined>(undefined)
   // Re-render once a second while something runs, so the elapsed counter moves
   // and a minutes-long install does not look like a hang.
   const [, tick] = useState(0)
@@ -260,10 +261,17 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
                       </div>
                       <p className={cls.meta}>
                         {item.npm ?? t('noNpm')}
+                        {item.version !== undefined ? ` v${item.version}` : ''}
+                        {item.license !== undefined ? ` · ${item.license}` : ''}
                         {item.stars !== undefined ? ` · ★ ${item.stars}` : ''}
                         {done ? ` · ${pending ? t('restart') : t('installed')}` : ''}
                       </p>
                       <p className={cls.summary}>{item.summary}</p>
+                      {item.detail !== undefined && (
+                        opened === item.id
+                          ? <p className={cls.detail}>{item.detail}</p>
+                          : <button type="button" className={cls.more} onClick={() => setOpened(item.id)}>{t('more')}</button>
+                      )}
                       {failure !== undefined && <p className={cls.warn}>{t('failed')}: {failure}</p>}
                       {busy && (
                         <div className={cls.progress}>

@@ -40,6 +40,8 @@ export const cls = {
   meta: `${P}-meta`,
   badge: `${P}-badge`,
   summary: `${P}-summary`,
+  detail: `${P}-detail`,
+  more: `${P}-more`,
   cardFoot: `${P}-card-foot`,
   tag: `${P}-tag`,
   actions: `${P}-actions`,
@@ -93,6 +95,9 @@ const CSS = `
 .${cls.badge}{font-size:11px;padding:1px 8px;border-radius:99px;color:var(--dsw-alias-brand-primary,#4f6ef7);border:1px solid currentColor;font-weight:500}
 .${cls.meta}{font-size:12px;color:var(--dsw-alias-label-tertiary,#9ca3af);margin:0}
 .${cls.summary}{margin:0;font-size:13px;line-height:1.6;color:var(--dsw-alias-label-secondary,#6b7280)}
+.${cls.detail}{margin:0;font-size:12.5px;line-height:1.75;color:var(--dsw-alias-label-tertiary,#9ca3af);padding:10px 12px;border-radius:8px;background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.08))}
+.${cls.more}{align-self:flex-start;border:0;background:none;color:var(--dsw-alias-brand-primary,#4f6ef7);font:inherit;font-size:12.5px;cursor:pointer;padding:0}
+.${cls.more}:hover{text-decoration:underline}
 .${cls.cardFoot}{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .${cls.tag}{font-size:11.5px;color:var(--dsw-alias-label-secondary,#6b7280);border:1px solid var(--dsw-alias-border-l2,#e5e7eb);border-radius:5px;padding:1px 7px}
 .${cls.actions}{margin-left:auto;display:flex;align-items:center;gap:8px}

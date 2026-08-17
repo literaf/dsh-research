@@ -14,6 +14,7 @@ export type MarketLocaleKey =
   | 'tabDiscover'
   | 'tabInstalled'
   | 'allCategories'
+  | 'more'
   | 'catLiterature'
   | 'catReference'
   | 'catWriting'
@@ -76,6 +77,7 @@ export const zh: Record<MarketLocaleKey, string> = {
   tabDiscover: '发现',
   tabInstalled: '已安装',
   allCategories: '全部',
+  more: '它具体能做什么 →',
   catLiterature: '文献检索与阅读',
   catReference: '文献管理与引用',
   catWriting: '写作与评审',
@@ -132,6 +134,7 @@ export const en: Record<MarketLocaleKey, string> = {
   tabDiscover: 'Discover',
   tabInstalled: 'Installed',
   allCategories: 'All',
+  more: 'What it actually does →',
   catLiterature: 'Literature',
   catReference: 'References',
   catWriting: 'Writing & review',

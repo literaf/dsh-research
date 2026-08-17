@@ -60,6 +60,12 @@ export interface MarketItem {
   readonly npm?: string
   /** Star count, when known. */
   readonly stars?: number
+  /** The longer text, shown when the reader opens a row. */
+  readonly detail?: string
+  /** Published version, when the catalog states one. */
+  readonly version?: string
+  /** SPDX licence, when known. */
+  readonly license?: string
   /** Whether AI4Scholar maintains this entry. */
   readonly ours: boolean
 }

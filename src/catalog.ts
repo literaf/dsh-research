@@ -51,6 +51,9 @@ function item(raw: unknown): MarketItem | undefined {
     : undefined
 
   const npm = str(obj(source, 'package') ?? {}, 'name')
+  const detail = str(source, 'description')
+  const version = str(source, 'latestVersion')
+  const license = str(source, 'license')
   return {
     id,
     repo: repoFromUrl(homepage) ?? id,
@@ -59,6 +62,9 @@ function item(raw: unknown): MarketItem | undefined {
     homepage,
     ...(npm === undefined ? {} : { npm }),
     ...(stars === undefined ? {} : { stars }),
+    ...(detail === undefined ? {} : { detail }),
+    ...(version === undefined ? {} : { version }),
+    ...(license === undefined ? {} : { license }),
     // Our own entries are the ones we can support; the panel says which.
     ours: publisher === 'literaf' || (repoFromUrl(homepage)?.startsWith('literaf/') ?? false),
   }
