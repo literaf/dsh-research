@@ -1,7 +1,7 @@
 {
   "name": "dsh-research",
-  "version": "0.3.0",
-  "description": "The research plugin market inside DeepSeek Harness: browse a curated index of literature, reference, writing and workbench plugins in Settings and install them with one click \u2014 \u79d1\u7814\u63d2\u4ef6\u5e02\u573a\uff0c\u5728\u8bbe\u7f6e\u91cc\u6d4f\u89c8\u5e76\u4e00\u952e\u5b89\u88c5\u3002",
+  "version": "0.3.1",
+  "description": "The research plugin market inside DeepSeek Harness: browse a curated index of literature, reference, writing and workbench plugins in Settings and install them with one click — 科研插件市场，在设置里浏览并一键安装。",
   "type": "module",
   "license": "MIT",
   "author": "ai4scholar",
@@ -40,8 +40,8 @@
     "market",
     "research",
     "academic",
-    "\u79d1\u7814\u63d2\u4ef6\u5e02\u573a",
-    "\u63d2\u4ef6\u5e02\u573a"
+    "科研插件市场",
+    "插件市场"
   ],
   "engines": {
     "node": ">=22.19.0"

@@ -6,6 +6,12 @@
  * `bg-layer-*`, `border-l2`, `brand-primary` — which is the set the built-in
  * settings pages use. Inventing token names produces a panel that silently
  * falls back to hardcoded colours and stops following the theme.
+ *
+ * Filled buttons must pair `button-primary-fill` with `label-primary-foreground`,
+ * the way the shell's own buttons do. `brand-primary` inverts between themes
+ * (near-black in light, near-white in dark), so a hardcoded `#fff` label on it
+ * reads fine in light mode and vanishes in dark. Fallbacks here are all light,
+ * so a missing token set degrades to one coherent theme rather than a mix.
  * @module dsh-research/client/styles
  */
 
@@ -101,8 +107,8 @@ const CSS = `
 .${cls.cardFoot}{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .${cls.tag}{font-size:11.5px;color:var(--dsw-alias-label-secondary,#6b7280);border:1px solid var(--dsw-alias-border-l2,#e5e7eb);border-radius:5px;padding:1px 7px}
 .${cls.actions}{margin-left:auto;display:flex;align-items:center;gap:8px}
-.${cls.primary}{flex:none;border:0;background:var(--dsw-alias-brand-primary,#4f6ef7);color:#fff;border-radius:7px;padding:6px 15px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
-.${cls.primary}:hover:not(:disabled){filter:brightness(1.08)}
+.${cls.primary}{flex:none;border:0;background:var(--dsw-alias-button-primary-fill,#1f2328);color:var(--dsw-alias-label-primary-foreground,#fff);border-radius:7px;padding:6px 15px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.${cls.primary}:hover:not(:disabled){background:var(--dsw-alias-button-primary-hover,#3a3f47)}
 .${cls.primary}:disabled{opacity:.45;cursor:default}
 .${cls.ghost}{flex:none;border:1px solid var(--dsw-alias-border-l2,#e5e7eb);background:transparent;color:inherit;border-radius:7px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer}
 .${cls.ghost}:hover:not(:disabled){border-color:var(--dsw-alias-brand-primary,#4f6ef7)}
@@ -113,17 +119,17 @@ const CSS = `
 .${cls.warn}{margin:0;font-size:12.5px;color:var(--dsw-alias-state-warn-primary,#b45309);overflow-wrap:anywhere}
 .${cls.disclosure}{margin:0;font-size:12px;line-height:1.6;color:var(--dsw-alias-label-tertiary,#9ca3af);padding-top:4px;border-top:1px solid var(--dsw-alias-border-l2,#e5e7eb)}
 .${cls.overlay}{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:24px}
-.${cls.dialog}{width:min(460px,100%);max-height:80vh;overflow-y:auto;background:var(--dsw-alias-bg-layer-1,#1c1c20);border:1px solid var(--dsw-alias-border-l2,#33343a);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 18px 48px rgba(0,0,0,.4)}
+.${cls.dialog}{width:min(460px,100%);max-height:80vh;overflow-y:auto;background:var(--dsw-alias-bg-layer-1,#ffffff);border:1px solid var(--dsw-alias-border-l2,#e5e7eb);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 18px 48px rgba(0,0,0,.4)}
 .${cls.dialogHead}{display:flex;align-items:flex-start;gap:12px}
 .${cls.dialogTitle}{margin:0;font-size:16px;font-weight:600;line-height:1.4;flex:1}
 .${cls.dialogClose}{flex:none;border:0;background:none;color:var(--dsw-alias-label-tertiary,#9ca3af);font-size:15px;line-height:1;cursor:pointer;padding:2px 4px}
-.${cls.dialogClose}:hover{color:var(--dsw-alias-label-primary,#f0f0f2)}
-.${cls.dialogBody}{margin:0;font-size:13.5px;line-height:1.7;color:var(--dsw-alias-label-secondary,#a8adb8);display:flex;flex-direction:column;gap:10px}
-.${cls.dialogBody} b{color:var(--dsw-alias-label-primary,#f0f0f2);font-weight:600}
-.${cls.dialogCmd}{margin:0;padding:11px 13px;border-radius:8px;background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.14));font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-primary,#f0f0f2)}
+.${cls.dialogClose}:hover{color:var(--dsw-alias-label-primary,#1f2328)}
+.${cls.dialogBody}{margin:0;font-size:13.5px;line-height:1.7;color:var(--dsw-alias-label-secondary,#6b7280);display:flex;flex-direction:column;gap:10px}
+.${cls.dialogBody} b{color:var(--dsw-alias-label-primary,#1f2328);font-weight:600}
+.${cls.dialogCmd}{margin:0;padding:11px 13px;border-radius:8px;background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.14));font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--dsw-alias-label-primary,#1f2328)}
 .${cls.dialogFoot}{display:flex;justify-content:flex-end;gap:10px;padding-top:2px}
-.${cls.progress}{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:8px;border:1px solid var(--dsw-alias-border-l2,#33343a)}
-.${cls.progressText}{margin:0;font-size:12.5px;color:var(--dsw-alias-label-secondary,#a8adb8)}
+.${cls.progress}{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:8px;border:1px solid var(--dsw-alias-border-l2,#e5e7eb)}
+.${cls.progressText}{margin:0;font-size:12.5px;color:var(--dsw-alias-label-secondary,#6b7280)}
 .${cls.progressTrack}{height:3px;border-radius:99px;background:var(--dsw-alias-bg-layer-3,rgba(127,127,127,.2));overflow:hidden;position:relative}
 .${cls.progressTrack}::after{content:'';position:absolute;inset-block:0;width:38%;border-radius:99px;background:var(--dsw-alias-brand-primary,#4f6ef7);animation:${P}-slide 1.35s ease-in-out infinite}
 @keyframes ${P}-slide{0%{left:-38%}100%{left:100%}}
