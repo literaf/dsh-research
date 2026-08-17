@@ -1,28 +1,26 @@
 # Changelog
 
-All notable changes to `dsh-research` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (0.x: minor bumps may change the skill set).
+All notable changes to `dsh-research` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
+
+## [0.3.0] - 2026-08-17
+
+`dsh-research` is now **the research plugin market** — a page in the Settings sidebar listing a curated index of research plugins, each installable with one click.
+
+This replaces the skill pack that carried the name through 0.1 and 0.2. The pack was four markdown procedures and a prompt section: real content, but nothing another author could not write, and it was competing for the name that should carry the thing this project is actually about. The name now holds the entry point; the skills remain published at [ai4scholar-skill-hub](https://github.com/literaf/ai4scholar-skill-hub) and are a better fit inside `dsh-ai4scholar`, whose tools they depend on to mean anything.
+
+`^0.2.0` does not match `0.3.0` under 0.x semver, so nobody on the old pack is moved onto a different plugin by an update.
+
+### Added
+- A **Research plugins** page in the Settings sidebar: the curated catalog with search, category filters, and Discover / Installed tabs.
+- One-click install and removal, fenced four ways: an allowlist (the browser may name any package, only a catalogued one is ever spawned), a same-origin check, a single-flight lock, and a profile read from the argv this host booted.
+- A restart action, guarded harder than install because ending the process is a stronger act: loopback peers only, and any forwarding header disqualifies the request.
+- A confirmation before every mutation, naming the plugin, the profile, and the exact command that will run.
+- Progress feedback with an elapsed counter, because a dependency resolve can run for minutes and a silent button reads as a hang.
+- Bilingual catalog: the provider contract fixes the item shape, so the two languages are two feeds and the panel reads the one its interface speaks.
+
+### Removed
+- The four bundled skills and the workflow prompt section (see above).
 
 ## [0.2.0] - 2026-08-17
 
-### Added
-- `language` config (`zh` | `en`, default `zh`) selecting the language of the workflow guidance and of each skill's catalog entry. The skill bodies remain the verbatim Chinese originals in both settings, and the English guidance states that outright so the model reports back in the user's language instead of echoing the procedure untranslated.
-- A real-composition test suite: the built `lib/` mounts under a genuine `SystemPrompt` and `SkillRegistry`, proving skill-name validation, body loading through the registry's own loader, prompt assembly, config through the compiled schema, and that disposing the fiber withdraws every contribution.
-- A packaging test that inspects the tarball `npm publish` would upload, so a package that cannot resolve its own skill bodies at mount time fails the suite instead of the user's install.
-
-### Fixed
-- The workflow guidance listed the pack's skills even where no skill registry was composed, so nothing had registered them and the model was routed at a loader that could not resolve the names. The guidance now reads `ctx.get('skills')` at assembly time, the same way it already probed `tools`.
-
-### Changed
-- `buildGuidance` returns `string` rather than `string | undefined`; the undefined branch was unreachable because the search rule and the answer-language rule are always emitted.
-
-## [0.1.1] - 2026-08-16
-
-### Fixed
-- `repository` and `bugs` pointed at the pre-rename repository name, so the npm page linked to a repository that does not exist.
-
-## [0.1.0] - 2026-08-16
-
-### Added
-- Four embedded research skills authored by AI4Scholar — `ai4scholar-paper-review`, `ai4scholar-introduction-writing`, `ai4scholar-academic-formatting`, `ai4scholar-reference-audit` — registered through `ctx.skills.register`, so nothing has to be downloaded or configured by the user.
-- A workflow section in the system prompt that adapts to the composition: it points the model at the `dsh-ai4scholar` search tools when they are installed, and tells the user how to install them when they are not.
-- Workspace conventions (`papers/`, `references.bib`, `notes/`) stated in the guidance so a research session resumes where the previous one stopped, all configurable.
+The skill pack's last release. See the repository history for its changelog.

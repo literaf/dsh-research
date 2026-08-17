@@ -2,11 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
+    "emitDeclarationOnly": true,
     "declaration": true,
-    "sourceMap": false,
-    "outDir": "lib",
+    "outDir": "lib/client-types",
     "rootDir": "src"
   },
-  "include": ["src"],
-  "exclude": ["src/client"]
+  "include": ["src/client", "src/shared"]
 }

@@ -1,11 +1,11 @@
 {
   "name": "dsh-research",
-  "version": "0.2.0",
-  "description": "AI4Scholar research pack for DeepSeek Harness (dsh): research skills, literature-first workflow guidance and workspace conventions. Pairs with dsh-ai4scholar for search, full text, citations and figures.",
+  "version": "0.3.0",
+  "description": "The research plugin market inside DeepSeek Harness: browse a curated index of literature, reference, writing and workbench plugins in Settings and install them with one click \u2014 \u79d1\u7814\u63d2\u4ef6\u5e02\u573a\uff0c\u5728\u8bbe\u7f6e\u91cc\u6d4f\u89c8\u5e76\u4e00\u952e\u5b89\u88c5\u3002",
   "type": "module",
   "license": "MIT",
   "author": "ai4scholar",
-  "homepage": "https://ai4scholar.net?src=dsh",
+  "homepage": "https://dsh-research.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/literaf/dsh-research.git"
@@ -20,27 +20,28 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
+    "./client": {
+      "types": "./lib/client-types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
     "lib",
-    "skills",
     "cordis.patch.yml",
     "README.md",
     "README_CN.md",
     "LICENSE"
   ],
-  "sideEffects": false,
   "keywords": [
     "dsh-plugin",
     "deepseek-harness",
     "dsh",
-    "ai4scholar",
-    "academic",
+    "market",
     "research",
-    "skills",
-    "paper-writing",
-    "peer-review"
+    "academic",
+    "\u79d1\u7814\u63d2\u4ef6\u5e02\u573a",
+    "\u63d2\u4ef6\u5e02\u573a"
   ],
   "engines": {
     "node": ">=22.19.0"
@@ -48,6 +49,15 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
     }
   },
   "publishConfig": {
@@ -55,30 +65,51 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "pnpm run build:lib && pnpm run build:client",
+    "build:lib": "tsc -p tsconfig.build.json",
+    "build:client": "tsdown && tsc -p tsconfig.client-types.json",
     "clean": "rm -rf lib",
     "typecheck": "tsc -p tsconfig.json",
     "pretest": "pnpm run build",
     "test": "vitest run",
-    "prepare": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm run build",
     "prepublishOnly": "pnpm run clean && pnpm run typecheck && pnpm run test",
-    "postpublish": "node scripts/sync-mirror.mjs"
+    "postpublish": "node scripts/sync-mirror.mjs",
+    "sync-mirror": "node scripts/sync-mirror.mjs"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": ">=4.0.1",
-    "@deepseek-ai/dsh-skill": ">=0.1.0-rc.6",
-    "@deepseek-ai/dsh-system-prompt": ">=0.1.0-rc.6",
-    "@deepseek-ai/dsh-tools": ">=0.1.0-rc.6",
-    "@deepseek-ai/schemastery": ">=3.18.1"
+    "@deepseek-ai/schemastery": ">=3.18.1",
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.0-rc.6"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.1",
-    "@deepseek-ai/dsh-skill": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-api-remotes": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-connection": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-locale": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-runtime": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-settings-plugins": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-web-react": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-commands": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-credentials": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-host-webserver": "0.1.0-rc.6",
+    "@deepseek-ai/dsh-llm": "0.1.0-rc.6",
     "@deepseek-ai/dsh-system-prompt": "0.1.0-rc.6",
     "@deepseek-ai/dsh-tools": "0.1.0-rc.6",
     "@deepseek-ai/schemastery": "3.18.1",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.20.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "jsdom": "^26.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsdown": "^0.22.14",
     "typescript": "^5.9.0",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.0-rc.6"
   }
 }

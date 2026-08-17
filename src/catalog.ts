@@ -1,0 +1,82 @@
+/**
+ * Turn a market provider page into the panel's own model.
+ *
+ * The catalog is remote and untrusted — that is the contract's own wording,
+ * and it holds even when we publish the catalog ourselves, because a user may
+ * point this plugin at any endpoint. So nothing here trusts a field's
+ * presence or type: every entry is checked, and an entry that fails is
+ * dropped rather than rendered half-empty.
+ * @module dsh-research/catalog
+ */
+
+import type { CatalogPage, MarketItem } from './shared/route.js'
+
+/** Read a string property, or `undefined` when it is absent or not a string. */
+function str(source: Record<string, unknown>, key: string): string | undefined {
+  const value = source[key]
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined
+}
+
+/** Read a record property, or `undefined`. */
+function obj(source: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
+  const value = source[key]
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined
+}
+
+/** Derive `owner/repo` from a GitHub URL, or `undefined` for anything else. */
+export function repoFromUrl(url: string): string | undefined {
+  const match = /^https:\/\/github\.com\/([^/]+\/[^/#?]+)/.exec(url)
+  return match?.[1]
+}
+
+/** Convert one catalog item, or `undefined` when it lacks what the panel shows. */
+function item(raw: unknown): MarketItem | undefined {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined
+  const source = raw as Record<string, unknown>
+  const homepage = str(source, 'homepage') ?? str(obj(source, 'repository') ?? {}, 'url')
+  const summary = str(source, 'summary')
+  const id = str(source, 'id')
+  if (homepage === undefined || summary === undefined || id === undefined) return undefined
+  // Only https: a catalog is remote data, and a rendered link is a click away
+  // from wherever it points.
+  if (!homepage.startsWith('https://')) return undefined
+
+  const categories = source['categories']
+  const category = Array.isArray(categories) && typeof categories[0] === 'string' ? categories[0] : 'other'
+  const publisher = str(obj(source, 'publisher') ?? {}, 'name')
+  const stars = typeof source['stars'] === 'number' && Number.isFinite(source['stars'])
+    ? source['stars'] as number
+    : undefined
+
+  const npm = str(obj(source, 'package') ?? {}, 'name')
+  return {
+    id,
+    repo: repoFromUrl(homepage) ?? id,
+    summary,
+    category,
+    homepage,
+    ...(npm === undefined ? {} : { npm }),
+    ...(stars === undefined ? {} : { stars }),
+    // Our own entries are the ones we can support; the panel says which.
+    ours: publisher === 'literaf' || (repoFromUrl(homepage)?.startsWith('literaf/') ?? false),
+  }
+}
+
+/**
+ * Normalize a provider page.
+ * @param raw - the parsed JSON body.
+ * @returns the entries the panel can render, in catalog order.
+ * @throws Error when the body is not a provider page at all.
+ */
+export function normalizeCatalog(raw: unknown): CatalogPage {
+  if (typeof raw !== 'object' || raw === null) throw new Error('catalog body is not an object')
+  const source = raw as Record<string, unknown>
+  const items = source['items']
+  if (!Array.isArray(items)) throw new Error('catalog body has no items array')
+  return {
+    items: items.map(item).filter((entry): entry is MarketItem => entry !== undefined),
+    revision: str(source, 'revision') ?? str(source, 'generatedAt') ?? '',
+  }
+}
