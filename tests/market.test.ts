@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { argvProfile, normalizeCatalog, pluginArgs, quoteCmdArg, spawnEnv, trustedRestartRequest } from '../src/index.js'
-import { MarketController, filterItems, installCommand } from '../src/client/index.js'
+import { argvProfile, attachedToTerminal, normalizeCatalog, pluginArgs, quoteCmdArg, restartCommand, spawnEnv, trustedRestartRequest } from '../src/index.js'
+import { MarketController, PROBE_INTERVAL_MS, filterItems, installCommand } from '../src/client/index.js'
 import type { CatalogResponse, InstallResponse, MarketItem, RestartResponse } from '../src/index.js'
 
 const PAGE = {
@@ -82,7 +82,8 @@ describe('process layer', () => {
 function answer(overrides: Partial<CatalogResponse> = {}): CatalogResponse {
   return {
     items: normalizeCatalog(PAGE).items,
-    revision: '2026-08-17', installed: [], profile: 'web', ...overrides,
+    revision: '2026-08-17', installed: [], profile: 'web',
+    attached: false, restartCommand: 'dsh web', ...overrides,
   }
 }
 
@@ -241,16 +242,19 @@ describe('removal and restart', () => {
 
   it('does not offer a second restart while one is under way', async () => {
     let calls = 0
+    // A probe that never settles holds the controller in `waiting`, which is
+    // the state the second press has to be refused in.
     const controller = new MarketController(
       () => Promise.resolve(answer()),
       (npm) => Promise.resolve({ ok: true, npm }),
       (npm) => Promise.resolve({ ok: true, npm }),
-      () => { calls += 1; return Promise.resolve({ ok: true } satisfies RestartResponse) },
+      () => { calls += 1; return Promise.resolve({ ok: true, mode: 'relaunch' } satisfies RestartResponse) },
+      () => new Promise<boolean>(() => undefined),
     )
-    await controller.restartHost()
+    void controller.restartHost()
     await controller.restartHost()
     expect(calls).toBe(1)
-    expect(controller.state().restarting).toBe(true)
+    expect(controller.state().restartPhase).toBe('waiting')
   })
 
   it('re-enables the button when the host refuses to restart', async () => {
@@ -261,8 +265,121 @@ describe('removal and restart', () => {
       () => Promise.resolve({ ok: false, error: 'self-restart is disabled' }),
     )
     await controller.restartHost()
-    expect(controller.state().restarting).toBe(false)
+    expect(controller.state().restartPhase).toBeUndefined()
     expect(controller.state().error).toBe('self-restart is disabled')
+  })
+})
+
+/**
+ * A scripted liveness sequence and a clock that only moves when the controller
+ * sleeps, so a ninety-second wait runs instantly and deterministically.
+ * @param liveness - what each successive probe answers; the last value repeats.
+ * @returns the three injectables plus a count of probes made.
+ */
+function watcher(liveness: readonly boolean[]): {
+  probe: () => Promise<boolean>
+  sleep: () => Promise<void>
+  now: () => number
+  probes: () => number
+} {
+  let index = 0
+  let clock = 0
+  return {
+    probe: () => Promise.resolve(liveness[Math.min(index++, liveness.length - 1)] ?? false),
+    sleep: () => { clock += PROBE_INTERVAL_MS; return Promise.resolve() },
+    now: () => clock,
+    probes: () => index,
+  }
+}
+
+/** Build a controller whose restart answer and probe sequence are scripted. */
+function restarting(response: RestartResponse, liveness: readonly boolean[]): {
+  controller: MarketController
+  probes: () => number
+} {
+  const watch = watcher(liveness)
+  return {
+    controller: new MarketController(
+      () => Promise.resolve(answer()),
+      (npm) => Promise.resolve({ ok: true, npm }),
+      (npm) => Promise.resolve({ ok: true, npm }),
+      () => Promise.resolve(response),
+      watch.probe, watch.sleep, watch.now,
+    ),
+    probes: watch.probes,
+  }
+}
+
+/*
+ * These four cases are the whole reason the restart flow was rewritten. The
+ * panel used to set one flag and assume the page was "about to go away", so
+ * whatever happened next it kept saying "restarting…". In the failure a person
+ * actually hit, the host did come back — detached, invisible, still holding the
+ * port — and the panel had no way to say so.
+ */
+describe('waiting for the host to come back', () => {
+  it('reports it back only after seeing it go away first', async () => {
+    // Probing for "up" first would find the process that is still serving its
+    // last half-second and call the restart done before it happened.
+    const { controller, probes } = restarting({ ok: true, mode: 'relaunch' }, [true, false, false, true])
+    await controller.restartHost()
+    expect(controller.state().restartPhase).toBe('back')
+    expect(probes()).toBe(4)
+  })
+
+  it('says the host never exited rather than claiming success', async () => {
+    const { controller } = restarting({ ok: true, mode: 'relaunch' }, [true])
+    await controller.restartHost()
+    expect(controller.state().restartPhase).toBe('stayed')
+  })
+
+  it('names the log when the replacement never answers', async () => {
+    const { controller } = restarting({ ok: true, mode: 'relaunch', log: '/tmp/restart.log' }, [false])
+    await controller.restartHost()
+    expect(controller.state().restartPhase).toBe('lost')
+    expect(controller.state().restartLog).toBe('/tmp/restart.log')
+  })
+
+  it('hands back the command for a terminal-owned host and probes nothing', async () => {
+    const { controller, probes } = restarting(
+      { ok: false, mode: 'manual', command: 'dsh --profile web web' },
+      [false, true],
+    )
+    await controller.restartHost()
+    expect(controller.state().restartPhase).toBe('manual')
+    expect(controller.state().restartCommand).toBe('dsh --profile web web')
+    // Nothing was killed, so there is nothing to wait for.
+    expect(probes()).toBe(0)
+    expect(controller.state().error).toBeUndefined()
+  })
+
+  it('carries the host\'s own answer about who restarts it into the panel', async () => {
+    const controller = new MarketController(
+      () => Promise.resolve(answer({ attached: true, restartCommand: 'dsh web --port 8080' })),
+    )
+    await controller.refresh()
+    expect(controller.state().attached).toBe(true)
+    expect(controller.state().restartCommand).toBe('dsh web --port 8080')
+  })
+})
+
+describe('who may restart this host', () => {
+  it('treats either standard stream being a terminal as attached', () => {
+    expect(attachedToTerminal({ stdout: { isTTY: true }, stdin: { isTTY: false } })).toBe(true)
+    expect(attachedToTerminal({ stdout: { isTTY: false }, stdin: { isTTY: true } })).toBe(true)
+    expect(attachedToTerminal({ stdout: { isTTY: false }, stdin: { isTTY: false } })).toBe(false)
+    // A Dock launch has no streams at all, which is the case a relaunch is for.
+    expect(attachedToTerminal({})).toBe(false)
+  })
+
+  it('reproduces the launch rather than assuming `dsh web`', () => {
+    expect(restartCommand(['/usr/bin/node', '/opt/homebrew/bin/dsh', 'web'])).toBe('dsh web')
+    expect(restartCommand(['/usr/bin/node', '/opt/homebrew/bin/dsh', '--profile', 'test', 'web', '--port', '8080']))
+      .toBe('dsh --profile test web --port 8080')
+  })
+
+  it('falls back to the node invocation for a source launch', () => {
+    expect(restartCommand(['/usr/bin/node', 'lib/bin.js', 'web'], '/usr/bin/node')).toBe('node lib/bin.js web')
   })
 })
 

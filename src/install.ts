@@ -25,7 +25,7 @@ import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import type { ChildProcess } from 'node:child_process'
 import { homedir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 
 /** Longest an install may run before it is killed. */
 export const INSTALL_TIMEOUT_MS = 10 * 60 * 1000
@@ -214,6 +214,51 @@ export function argvProfile(argv: readonly string[] = process.argv): string | un
 }
 
 /**
+ * Whether this host is attached to a terminal.
+ *
+ * This decides who is allowed to restart it, and the answer is not cosmetic.
+ * A relaunch is necessarily detached — the replacement is spawned by a helper
+ * that outlives this process, so it has no way back into the terminal the
+ * original was typed into. For a host launched from the Dock that costs
+ * nothing. For a host launched by a person in a shell it costs them their
+ * whole setup: the log they were watching goes to a temp file, Ctrl-C stops
+ * working, and the invisible replacement still holds the port — so the next
+ * `dsh web` they type fails with EADDRINUSE and nothing on screen says why.
+ * @param streams - the process to read; injectable for tests.
+ * @returns whether a terminal owns this process's output.
+ */
+export function attachedToTerminal(streams: {
+  stdout?: { isTTY?: boolean | undefined } | undefined
+  stdin?: { isTTY?: boolean | undefined } | undefined
+} = process): boolean {
+  return streams.stdout?.isTTY === true || streams.stdin?.isTTY === true
+}
+
+/**
+ * The command that starts this host again, as the person who started it typed
+ * it.
+ *
+ * Reconstructed from argv rather than assumed to be `dsh web`: a host booted
+ * with `--profile test --port 8080` has to be told to come back the same way,
+ * or the instruction quietly hands them a different composition.
+ * @param argv - process arguments; injectable for tests.
+ * @param execPath - the node binary; injectable for tests.
+ * @returns a command line to run in a shell.
+ */
+export function restartCommand(argv: readonly string[] = process.argv, execPath: string = process.execPath): string {
+  const entry = argv[1]
+  if (entry !== undefined && /[\\/]dsh$/.test(entry)) return ['dsh', ...argv.slice(2)].join(' ')
+  return [basename(execPath), ...argv.slice(1)].join(' ')
+}
+
+/** How a restart request was answered. */
+export type RestartOutcome =
+  /** A replacement is scheduled and this process is about to exit. */
+  | { readonly mode: 'relaunch'; readonly pid: number; readonly helperPid: number | undefined; readonly log: string }
+  /** Nothing was done, because only the person at the terminal can do it. */
+  | { readonly mode: 'manual'; readonly command: string }
+
+/**
  * Restart this dsh host so a newly installed plugin loads.
  *
  * A process cannot restart itself: killing it first leaves nothing to start
@@ -222,10 +267,21 @@ export function argvProfile(argv: readonly string[] = process.argv): string | un
  * is dsh-market's (MIT); the timings are theirs too, and they are load-bearing
  * — the parent exits before the helper launches, or the new host finds the
  * port still bound.
+ *
+ * When a terminal owns this process none of that happens: see
+ * {@link attachedToTerminal} for why a detached replacement leaves that host
+ * worse off than no replacement at all. The caller gets the command to hand
+ * back to the person instead and this process stays up, because refusing to
+ * act beats acting in a way they cannot undo from the window they are in.
+ *
+ * Never call this from a test. A test runner has no TTY, so it takes the
+ * relaunch branch and SIGTERMs the runner. {@link attachedToTerminal} and
+ * {@link restartCommand} are the parts worth testing, and both are pure.
  * @param profile - profile the replacement boots.
- * @returns the pids involved and where the replacement's output goes.
+ * @returns what was done: a scheduled relaunch, or the command to run by hand.
  */
-export function scheduleRestart(profile: string): { pid: number; helperPid: number | undefined; log: string } {
+export function scheduleRestart(profile: string): RestartOutcome {
+  if (attachedToTerminal()) return { mode: 'manual', command: restartCommand() }
   const { file, args, cwd, viaShell } = dshArgv()
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   const log = join(tmpdir(), `dsh-research-restart-${stamp}.log`)
@@ -249,7 +305,7 @@ export function scheduleRestart(profile: string): { pid: number; helperPid: numb
   const helper = spawn(process.execPath, ['-e', helperCode], { detached: true, stdio: 'ignore', env: process.env })
   helper.unref()
   setTimeout(() => process.kill(process.pid, 'SIGTERM'), 500)
-  return { pid: process.pid, helperPid: helper.pid, log }
+  return { mode: 'relaunch', pid: process.pid, helperPid: helper.pid, log }
 }
 
 /**

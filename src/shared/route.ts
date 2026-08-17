@@ -93,6 +93,15 @@ export interface CatalogResponse extends CatalogPage {
   readonly installed: readonly string[]
   /** The profile an install would mutate. */
   readonly profile: string
+  /**
+   * Whether a terminal owns this host, in which case only the person at that
+   * terminal can restart it. Sent with the catalog rather than discovered when
+   * the button is pressed, so the panel can say who has to do what *before*
+   * anything is clicked.
+   */
+  readonly attached: boolean
+  /** The command that starts this host again, for when that person is you. */
+  readonly restartCommand: string
 }
 
 /** What {@link RESTART_ROUTE} answers. */
@@ -101,8 +110,15 @@ export interface RestartResponse {
   readonly ok: boolean
   /** Why not, when it was refused. */
   readonly error?: string
+  /**
+   * What the host did. `relaunch` means it is exiting and a replacement is on
+   * its way; `manual` means it did nothing and {@link command} is yours to run.
+   */
+  readonly mode?: 'relaunch' | 'manual'
   /** Where the replacement's output goes, for a boot that fails. */
   readonly log?: string
+  /** The command to run yourself, when `mode` is `manual`. */
+  readonly command?: string
 }
 
 /** What {@link INSTALL_ROUTE} and {@link REMOVE_ROUTE} answer. */

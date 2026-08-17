@@ -50,6 +50,14 @@ export type MarketLocaleKey =
   | 'confirmClose'
   | 'restarting'
   | 'restartHint'
+  | 'restartWaiting'
+  | 'restartBack'
+  | 'restartLost'
+  | 'restartStayed'
+  | 'restartManualTitle'
+  | 'restartManualBody'
+  | 'restartManualHint'
+  | 'reload'
   | 'failed'
   | 'copy'
   | 'copied'
@@ -114,6 +122,14 @@ export const zh: Record<MarketLocaleKey, string> = {
   confirmClose: '关闭',
   restarting: '重启中…',
   restartHint: '有 {n} 项改动等待生效。重启后本页会短暂断开，刷新即可。',
+  restartWaiting: '重启中…本页会自己确认新进程回来了，不用手动刷新。',
+  restartBack: '已经回来了。刷新本页就能用上新装的插件。',
+  restartLost: '进程退出了，但没等到它回来。先看日志 {log}；要自己拉起来就运行 {command}。',
+  restartStayed: '宿主没有退出，改动还没生效。',
+  restartManualTitle: '这个 dsh 得你自己重启',
+  restartManualBody: '它是在终端里启动的，输出属于那个终端。我在后台拉起一个替代进程是能做到的，但你会失去 Ctrl-C 和正在看的日志，而它照样占着端口——你下次运行 dsh web 只会看到 EADDRINUSE，而且屏幕上没有任何东西解释为什么。所以这里什么都不做：回到那个终端，Ctrl-C，再运行下面这行。',
+  restartManualHint: '回到启动 dsh 的那个终端：Ctrl-C，然后运行 {command}。',
+  reload: '刷新',
   failed: '安装失败',
   copy: '复制命令',
   copied: '已复制',
@@ -172,6 +188,14 @@ export const en: Record<MarketLocaleKey, string> = {
   confirmClose: 'Close',
   restarting: 'Restarting…',
   restartHint: '{n} change(s) waiting. The page drops briefly during the restart — reload it.',
+  restartWaiting: 'Restarting… this page will confirm the replacement itself; no need to reload yet.',
+  restartBack: 'It is back. Reload this page to use what you installed.',
+  restartLost: 'The process exited but never came back. Check {log}, or start it yourself with {command}.',
+  restartStayed: 'The host did not exit, so nothing has taken effect.',
+  restartManualTitle: 'This dsh is yours to restart',
+  restartManualBody: 'It was started in a terminal, and its output belongs to that terminal. Spawning a replacement in the background is possible, but it would cost you Ctrl-C and the log you are watching, and the invisible replacement would still hold the port — so your next `dsh web` would fail with EADDRINUSE and nothing on screen would say why. Nothing is done here instead: go back to that terminal, press Ctrl-C, and run the line below.',
+  restartManualHint: 'Back in the terminal you started dsh in: Ctrl-C, then run {command}.',
+  reload: 'Reload',
   failed: 'Install failed',
   copy: 'Copy command',
   copied: 'Copied',

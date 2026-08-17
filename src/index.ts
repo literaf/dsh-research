@@ -26,13 +26,13 @@ import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { CATALOG_ROUTE, CATALOG_URL, CATALOG_URL_ZH, INSTALL_ROUTE, REMOVE_ROUTE, RESTART_ROUTE } from './shared/route.js'
 import type { CatalogPage, CatalogResponse, InstallResponse, MarketItem, RestartResponse } from './shared/route.js'
-import { argvProfile, installPackage, removePackage, scheduleRestart, trustedRestartRequest } from './install.js'
+import { argvProfile, attachedToTerminal, installPackage, removePackage, restartCommand, scheduleRestart, trustedRestartRequest } from './install.js'
 
 export { CATALOG_ROUTE, CATALOG_URL, CATALOG_URL_ZH, INSTALL_ROUTE, REMOVE_ROUTE, RESTART_ROUTE } from './shared/route.js'
 export type { CatalogPage, CatalogResponse, InstallResponse, MarketItem, RestartResponse } from './shared/route.js'
 export { normalizeCatalog } from './catalog.js'
-export { argvProfile, dshArgv, installPackage, pluginArgs, profileDir, quoteCmdArg, removePackage, scheduleRestart, spawnEnv, trustedRestartRequest } from './install.js'
-export type { DshInvocation, InstallOutcome } from './install.js'
+export { argvProfile, attachedToTerminal, dshArgv, installPackage, pluginArgs, profileDir, quoteCmdArg, removePackage, restartCommand, scheduleRestart, spawnEnv, trustedRestartRequest } from './install.js'
+export type { DshInvocation, InstallOutcome, RestartOutcome } from './install.js'
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'research-market'
@@ -126,7 +126,13 @@ export function apply(ctx: Context, config: Config): void {
         }
         try {
           const value = await answer()
-          sendJson(response, 200, { ...value, installed: installedBundles(profile), profile })
+          sendJson(response, 200, {
+            ...value,
+            installed: installedBundles(profile),
+            profile,
+            attached: attachedToTerminal(),
+            restartCommand: restartCommand(),
+          })
         } catch (cause) {
           const message = cause instanceof Error ? cause.message : String(cause)
           sendJson(response, 502, { error: `catalog unavailable: ${message}` })
@@ -254,9 +260,15 @@ export function apply(ctx: Context, config: Config): void {
           return
         }
         try {
-          const { log } = scheduleRestart(profile)
-          const answer: RestartResponse = { ok: true, log }
-          sendJson(response, 202, answer)
+          const outcome = scheduleRestart(profile)
+          // A terminal-owned host is not restarted from here: `ok: false` with
+          // the command is the honest answer, and 200 rather than an error
+          // status because the request was understood and answered — the panel
+          // has to render this, not retry it.
+          const answer: RestartResponse = outcome.mode === 'manual'
+            ? { ok: false, mode: 'manual', command: outcome.command }
+            : { ok: true, mode: 'relaunch', log: outcome.log }
+          sendJson(response, outcome.mode === 'manual' ? 200 : 202, answer)
         } catch (cause) {
           sendJson(response, 500, { error: cause instanceof Error ? cause.message : String(cause) })
         }

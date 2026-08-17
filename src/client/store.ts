@@ -39,9 +39,44 @@ export interface MarketState {
   readonly failures: Readonly<Record<string, string>>
   /** npm names changed during this session, which need a restart to take effect. */
   readonly pendingRestart: readonly string[]
-  /** Set once a restart has been scheduled and this page is about to go away. */
-  readonly restarting: boolean
+  /** How far a requested restart has got, once one has been asked for. */
+  readonly restartPhase?: RestartPhase
+  /** Where the replacement's output went, for a boot that fails. */
+  readonly restartLog?: string
+  /** Whether a terminal owns the host, so only the person there can restart it. */
+  readonly attached: boolean
+  /** The command that starts the host again, shown when that person is the reader. */
+  readonly restartCommand: string
 }
+
+/**
+ * Where a requested restart got to.
+ *
+ * The phases exist because "restarting…" on its own was a lie by omission: the
+ * host went down, came back detached, and the panel sat on that word forever
+ * while the person watched a terminal that never printed anything again. Each
+ * phase below is something the panel can say that is actually true.
+ */
+export type RestartPhase =
+  /** Asked, and waiting to see the host go away and come back. */
+  | 'waiting'
+  /** Confirmed back, and answering on this route again. */
+  | 'back'
+  /** It went down and did not come back within the budget. */
+  | 'lost'
+  /** It never went down, so nothing changed. */
+  | 'stayed'
+  /** Only the person at the terminal can restart it; nothing was done. */
+  | 'manual'
+
+/** How often the panel probes the host while waiting for it to come back. */
+export const PROBE_INTERVAL_MS = 700
+
+/** How long the host has to actually exit before the panel says it did not. */
+export const DOWN_BUDGET_MS = 15_000
+
+/** How long the replacement has to answer before the panel says it never did. */
+export const UP_BUDGET_MS = 90_000
 
 /** Minimal snapshot store shape the renderer binds as a hook. */
 export interface Store<T> {
@@ -77,7 +112,32 @@ export const requestRemove: InstallRequest = (npm) => postPackage(REMOVE_ROUTE, 
 export const requestRestart = async (): Promise<RestartResponse> => {
   const res = await fetch(RESTART_ROUTE, { method: 'POST', credentials: 'same-origin' })
   const body = await res.json() as RestartResponse & { error?: string }
+  // A `manual` answer is a complete answer, not a failure to be reported as
+  // one: the host declined to end itself and said who can.
+  if (body.mode === 'manual') return body
   return res.ok ? body : { ok: false, error: body.error ?? `restart route answered ${res.status}` }
+}
+
+/**
+ * Whether the host is answering this plugin's own route.
+ *
+ * The catalog route rather than the page root, because it answers the question
+ * that matters: a replacement that booted without this plugin is not a
+ * replacement the panel should call "back".
+ * @param lang - which feed to ask for; any answer counts, including an error.
+ * @returns whether the host answered at all.
+ */
+export const probeHost = async (lang: string): Promise<boolean> => {
+  try {
+    const res = await fetch(`${CATALOG_ROUTE}?lang=${encodeURIComponent(lang)}`, {
+      method: 'GET', credentials: 'same-origin', cache: 'no-store',
+    })
+    // Any HTTP status means a process is listening and this route is mounted;
+    // a 502 from an unreachable catalog still proves the host is up.
+    return res.status > 0
+  } catch {
+    return false
+  }
 }
 
 /** Default fetcher: `GET /research-market/catalog` on the page origin. */
@@ -125,7 +185,8 @@ export function filterItems(items: readonly MarketItem[], query: string): readon
 export class MarketController {
   readonly store = createStore<MarketState>({
     loading: true, items: [], revision: '', stale: false, query: '',
-    installed: [], profile: '', failures: {}, pendingRestart: [], restarting: false,
+    installed: [], profile: '', failures: {}, pendingRestart: [],
+    attached: false, restartCommand: 'dsh web',
   })
 
   private copyTimer: ReturnType<typeof setTimeout> | undefined
@@ -133,12 +194,21 @@ export class MarketController {
   /**
    * @param load - catalog fetcher; defaults to the same-origin route.
    * @param request - installer; defaults to the same-origin route.
+   * @param remove - remover; defaults to the same-origin route.
+   * @param restart - restart requester; defaults to the same-origin route.
+   * @param probe - host liveness probe; injectable so the restart wait is testable.
+   * @param sleep - delay between probes; injectable so tests do not wait.
+   * @param now - clock, for the probe budgets.
    */
   constructor(
     private readonly load: CatalogFetch = fetchCatalogRoute,
     private readonly request: InstallRequest = requestInstall,
     private readonly remove: InstallRequest = requestRemove,
     private readonly restart: () => Promise<RestartResponse> = requestRestart,
+    private readonly probe: (lang: string) => Promise<boolean> = probeHost,
+    private readonly sleep: (ms: number) => Promise<void> =
+      (ms) => new Promise((done) => setTimeout(done, ms)),
+    private readonly now: () => number = Date.now,
   ) {}
 
   /** Whether this entry is already a bundle in the profile. */
@@ -212,6 +282,11 @@ export class MarketController {
         ...rest, loading: false, items: answer.items,
         revision: answer.revision, stale: answer.stale === true,
         installed: answer.installed, profile: answer.profile,
+        attached: answer.attached === true,
+        // An older host does not send this; `dsh web` is the launch it is
+        // overwhelmingly likely to have had, and the panel only ever shows the
+        // command as something to check, never runs it.
+        restartCommand: answer.restartCommand ?? 'dsh web',
       })
     } catch (cause) {
       this.store.set({
@@ -266,16 +341,63 @@ export class MarketController {
       : { ...after, failures: { ...after.failures, [npm]: answer.error ?? 'remove failed' } })
   }
 
-  /** Ask the host to restart, so the changes made here take effect. */
+  /**
+   * Ask the host to restart, so the changes made here take effect, and then
+   * watch until the answer is known.
+   *
+   * The watching is the point. Nothing reloads this page when the host is
+   * replaced — the earlier version set a flag and assumed the page was "about
+   * to go away", which it never was, so the panel showed "restarting…"
+   * indefinitely whatever actually happened. The phases below are each
+   * something the panel can state without guessing.
+   */
   async restartHost(): Promise<void> {
-    if (this.state().restarting) return
-    this.store.set({ ...this.state(), restarting: true })
+    if (this.state().restartPhase === 'waiting') return
+    const { error, restartLog, ...clean } = this.state()
+    void error
+    void restartLog
+    this.store.set({ ...clean, restartPhase: 'waiting' })
     const answer = await this.restart()
-    if (!answer.ok) {
-      this.store.set({ ...this.state(), restarting: false, error: answer.error ?? 'restart refused' })
+    if (answer.mode === 'manual') {
+      this.store.set({ ...this.state(), restartPhase: 'manual', ...(answer.command === undefined ? {} : { restartCommand: answer.command }) })
+      return
     }
-    // On success the page is about to be replaced; leaving `restarting` set is
-    // what keeps the button from being pressed twice while that happens.
+    if (!answer.ok) {
+      const { restartPhase, ...rest } = this.state()
+      void restartPhase
+      this.store.set({ ...rest, error: answer.error ?? 'restart refused' })
+      return
+    }
+    const phase = await this.awaitReturn()
+    this.store.set({ ...this.state(), restartPhase: phase, ...(answer.log === undefined ? {} : { restartLog: answer.log }) })
+  }
+
+  /**
+   * Wait for the host to go away and come back.
+   *
+   * Down first, then up — and in that order for a reason. Probing for "up"
+   * straight away would find the process we just asked to exit, still serving
+   * for its last half-second, and report a restart that has not happened yet.
+   * @returns which of the three things happened.
+   */
+  private async awaitReturn(): Promise<'back' | 'lost' | 'stayed'> {
+    if (!(await this.until(false, DOWN_BUDGET_MS))) return 'stayed'
+    return (await this.until(true, UP_BUDGET_MS)) ? 'back' : 'lost'
+  }
+
+  /**
+   * Probe until the host's liveness matches `want`, or the budget runs out.
+   * @param want - the liveness being waited for.
+   * @param budgetMs - how long to keep asking.
+   * @returns whether it happened inside the budget.
+   */
+  private async until(want: boolean, budgetMs: number): Promise<boolean> {
+    const deadline = this.now() + budgetMs
+    for (;;) {
+      if (await this.probe(this.lang) === want) return true
+      if (this.now() >= deadline) return false
+      await this.sleep(PROBE_INTERVAL_MS)
+    }
   }
 
   /** Stop the pending copy reset; called when the section unmounts. */

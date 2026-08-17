@@ -138,12 +138,36 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
     return () => clearInterval(timer)
   }, [state.installing])
 
+  const waiting = state.restartPhase === 'waiting'
+  // A host with a terminal is restarted by the person at that terminal, so the
+  // dialog for it is instructions plus the command, not a confirmation.
+  const byHand = state.attached
+
   const commit = (): void => {
     if (pending === undefined) return
     if (pending.kind === 'install') install(pending.item)
     else if (pending.kind === 'remove') uninstall(pending.item)
-    else restartHost()
+    else {
+      // Copy first, then ask anyway: the host is the authority on whether it
+      // has a terminal, and asking is what puts the instruction on screen.
+      if (byHand) void globalThis.navigator?.clipboard?.writeText(state.restartCommand)
+      restartHost()
+    }
     setPending(undefined)
+  }
+
+  /** What the strip says about the restart, in the only terms that are true. */
+  const restartStatus = (): string => {
+    switch (state.restartPhase) {
+      case 'waiting': return t('restartWaiting')
+      case 'back': return t('restartBack')
+      case 'manual': return t('restartManualHint').replace('{command}', state.restartCommand)
+      case 'stayed': return t('restartStayed')
+      case 'lost': return t('restartLost')
+        .replace('{command}', state.restartCommand)
+        .replace('{log}', state.restartLog ?? '')
+      default: return t('restartHint').replace('{n}', String(state.pendingRestart.length))
+    }
   }
 
   useEffect(() => {
@@ -171,9 +195,9 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
                 the second case. */}
             {canRestart && (
               <button
-                type="button" className={cls.ghost} disabled={state.restarting}
+                type="button" className={cls.ghost} disabled={waiting}
                 onClick={() => setPending({ kind: 'restart' })} title={t('restartTitle')}
-              >{state.restarting ? t('restarting') : t('restartNow')}</button>
+              >{waiting ? t('restarting') : t('restartNow')}</button>
             )}
           </span>
         </p>
@@ -201,15 +225,22 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
         )}
         {state.stale && <p className={cls.warn}>{t('stale')}</p>}
 
-        {canRestart && state.pendingRestart.length > 0 && (
+        {canRestart && (state.pendingRestart.length > 0 || state.restartPhase !== undefined) && (
           <div className={cls.bar}>
-            <span>{state.restarting
-              ? t('restarting')
-              : t('restartHint').replace('{n}', String(state.pendingRestart.length))}</span>
-            <button
-              type="button" className={cls.primary} disabled={state.restarting}
-              onClick={() => setPending({ kind: 'restart' })}
-            >{t('restartNow')}</button>
+            <span>{restartStatus()}</span>
+            {state.restartPhase === 'back'
+              ? (
+                <button
+                  type="button" className={cls.primary}
+                  onClick={() => { globalThis.location?.reload() }}
+                >{t('reload')}</button>
+                )
+              : state.restartPhase === undefined && (
+                <button
+                  type="button" className={cls.primary}
+                  onClick={() => setPending({ kind: 'restart' })}
+                >{t('restartNow')}</button>
+              )}
           </div>
         )}
 
@@ -317,17 +348,19 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
         {pending !== undefined && (
           <Confirm
             title={pending.kind === 'restart'
-              ? t('confirmRestartTitle')
+              ? t(byHand ? 'restartManualTitle' : 'confirmRestartTitle')
               : t(pending.kind === 'install' ? 'confirmInstallTitle' : 'confirmRemoveTitle').replace('{name}', pending.item.repo)}
-            command={commandFor(pending, state.profile)}
-            confirmLabel={t('confirmYes')}
+            command={pending.kind === 'restart'
+              ? (byHand ? state.restartCommand : undefined)
+              : commandFor(pending, state.profile)}
+            confirmLabel={t(pending.kind === 'restart' && byHand ? 'copy' : 'confirmYes')}
             cancelLabel={t('confirmNo')}
             closeLabel={t('confirmClose')}
             onConfirm={commit}
             onCancel={() => setPending(undefined)}
           >
             {pending.kind === 'restart'
-              ? <span>{t('confirmRestartBody')}</span>
+              ? <span>{t(byHand ? 'restartManualBody' : 'confirmRestartBody')}</span>
               : (
                 <>
                   <span>{pending.item.summary}</span>
