@@ -291,6 +291,12 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
                   return (
                     <li key={item.id} className={cls.card}>
                       <div className={cls.cardHead}>
+                        {item.icon !== undefined && (
+                          // Inline data URI from the catalog — never a remote
+                          // URL (the parser enforces it), so no request leaves
+                          // the machine for this pixel.
+                          <img className={cls.avatar} src={item.icon} alt="" aria-hidden="true" />
+                        )}
                         <a className={cls.name} href={item.homepage} target="_blank" rel="noreferrer noopener">
                           {item.repo}
                         </a>
@@ -299,6 +305,7 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
                       <p className={cls.meta}>
                         {item.npm ?? t('noNpm')}
                         {item.version !== undefined ? ` v${item.version}` : ''}
+                        {item.versionAt !== undefined ? ` · ${t('publishedOn').replace('{d}', item.versionAt)}` : ''}
                         {item.license !== undefined ? ` · ${item.license}` : ''}
                         {item.stars !== undefined ? ` · ★ ${item.stars}` : ''}
                         {done ? ` · ${pending ? t('restart') : t('installed')}` : ''}

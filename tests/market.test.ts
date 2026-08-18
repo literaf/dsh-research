@@ -16,6 +16,8 @@ const PAGE = {
       publisher: { name: 'literaf' },
       license: 'MIT',
       latestVersion: '0.3.3',
+      latestVersionAt: '2026-08-18',
+      icon: 'data:image/png;base64,iVBORw0KGgo=',
     },
   ],
   page: { hasMore: false },
@@ -470,5 +472,29 @@ describe('updates', () => {
     expect(controller.updateFor(item!)).toBeUndefined()
     // The change still needs a restart to take effect, same as a fresh install.
     expect(controller.state().pendingRestart).toContain('dsh-ai4scholar')
+  })
+})
+
+describe('card imagery and dates', () => {
+  it('accepts an inline icon and the publish date', () => {
+    const [item] = normalizeCatalog(PAGE).items
+    expect(item!.icon).toBe('data:image/png;base64,iVBORw0KGgo=')
+    expect(item!.versionAt).toBe('2026-08-18')
+  })
+
+  it('refuses a remote icon URL — every pixel must ride the feed itself', () => {
+    const remote = {
+      ...PAGE,
+      items: [{ ...PAGE.items[0]!, icon: 'https://github.com/literaf.png' }],
+    }
+    expect(normalizeCatalog(remote).items[0]!.icon).toBeUndefined()
+  })
+
+  it('refuses an oversized data URI rather than bloating every render', () => {
+    const huge = {
+      ...PAGE,
+      items: [{ ...PAGE.items[0]!, icon: `data:image/png;base64,${'A'.repeat(70_000)}` }],
+    }
+    expect(normalizeCatalog(huge).items[0]!.icon).toBeUndefined()
   })
 })

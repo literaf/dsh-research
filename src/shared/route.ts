@@ -64,6 +64,10 @@ export interface MarketItem {
   readonly detail?: string
   /** Published version, when the catalog states one. */
   readonly version?: string
+  /** npm publish date (YYYY-MM-DD) of that version, when the catalog states it. */
+  readonly versionAt?: string
+  /** Owner avatar as an inline data URI; never a remote URL. */
+  readonly icon?: string
   /** SPDX licence, when known. */
   readonly license?: string
   /** Whether AI4Scholar maintains this entry. */

@@ -53,7 +53,15 @@ function item(raw: unknown): MarketItem | undefined {
   const npm = str(obj(source, 'package') ?? {}, 'name')
   const detail = str(source, 'description')
   const version = str(source, 'latestVersion')
+  const versionAt = str(source, 'latestVersionAt')
   const license = str(source, 'license')
+  // Only inline images. A remote URL here would make every card render a
+  // request to wherever the catalog points, and the panel's privacy property
+  // is that it performs exactly one network request — this catalog fetch.
+  const iconRaw = str(source, 'icon')
+  const icon = iconRaw !== undefined && iconRaw.startsWith('data:image/') && iconRaw.length <= 60_000
+    ? iconRaw
+    : undefined
   return {
     id,
     repo: repoFromUrl(homepage) ?? id,
@@ -64,6 +72,8 @@ function item(raw: unknown): MarketItem | undefined {
     ...(stars === undefined ? {} : { stars }),
     ...(detail === undefined ? {} : { detail }),
     ...(version === undefined ? {} : { version }),
+    ...(versionAt === undefined ? {} : { versionAt }),
+    ...(icon === undefined ? {} : { icon }),
     ...(license === undefined ? {} : { license }),
     ...(publisher === undefined ? {} : { publisher }),
     // Our own entries are the ones we can support; the panel says which.

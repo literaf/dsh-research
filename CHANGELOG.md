@@ -2,6 +2,14 @@
 
 All notable changes to `dsh-research` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.1] - 2026-08-18
+
+### Added
+- Cards show the owner's avatar and the pinned version's npm publish date. Avatars arrive inside the catalog as data URIs and the parser refuses anything else (remote URLs, oversized payloads) — the panel still performs exactly one network request.
+
+### Changed
+- Cards sit on `--dsw-alias-bg-base`, one step deeper than the settings surface in dark mode, so they read as cards the way the ecosystem's other markets do.
+
 ## [0.4.0] - 2026-08-18
 
 ### Added

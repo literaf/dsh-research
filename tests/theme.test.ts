@@ -25,6 +25,9 @@ import { installStyles } from '../src/client/styles.js'
  * that lookup is the whole point of the list.
  */
 const VERIFIED = new Set([
+  // bg-base: verified in design-platform.css — neutral-bluish-00 in light,
+  // neutral-bluish-950 in dark (one step deeper than the settings surface).
+  'bg-base',
   'bg-layer-1', 'bg-layer-2', 'bg-layer-3',
   'border-l2',
   'brand-primary',

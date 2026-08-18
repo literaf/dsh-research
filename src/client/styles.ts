@@ -41,6 +41,7 @@ export const cls = {
   bar: `${P}-bar`,
   list: `${P}-list`,
   card: `${P}-card`,
+  avatar: `${P}-avatar`,
   cardHead: `${P}-card-head`,
   name: `${P}-name`,
   meta: `${P}-meta`,
@@ -94,7 +95,11 @@ const CSS = `
 .${cls.bar}{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 13px;border-radius:8px;border:1px solid var(--dsw-alias-brand-primary,#4f6ef7);font-size:13px}
 .${cls.bar} span{flex:1 1 auto;min-width:0}
 .${cls.list}{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
-.${cls.card}{border:1px solid var(--dsw-alias-border-l2,#e5e7eb);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--dsw-alias-bg-layer-2,transparent)}
+${'' /* bg-base sits a step deeper than the settings page's own surface in
+     dark mode (950 vs 875), which is what makes cards read as cards there;
+     in light mode both are white and the border keeps doing that job. */}
+.${cls.card}{border:1px solid var(--dsw-alias-border-l2,#e5e7eb);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--dsw-alias-bg-base,transparent)}
+.${cls.avatar}{width:30px;height:30px;border-radius:8px;flex:none;display:block;object-fit:cover}
 .${cls.cardHead}{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .${cls.name}{font-size:14.5px;font-weight:600;text-decoration:none;color:inherit}
 .${cls.name}:hover{text-decoration:underline}

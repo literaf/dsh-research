@@ -32,6 +32,7 @@ export type MarketLocaleKey =
   | 'progressElapsed'
   | 'installed'
   | 'installedVersion'
+  | 'publishedOn'
   | 'update'
   | 'confirmUpdateTitle'
   | 'confirmUpdateBody'
@@ -108,6 +109,7 @@ export const zh: Record<MarketLocaleKey, string> = {
   progressElapsed: '已用 {n} 秒',
   installed: '已安装',
   installedVersion: '已装 v{v}',
+  publishedOn: '发布于 {d}',
   update: '更新到 v{v}',
   restart: '重启 dsh 后生效',
   uninstall: '卸载',
@@ -178,6 +180,7 @@ export const en: Record<MarketLocaleKey, string> = {
   progressElapsed: '{n}s elapsed',
   installed: 'Installed',
   installedVersion: 'v{v} on disk',
+  publishedOn: 'released {d}',
   update: 'Update to v{v}',
   restart: 'Restart dsh to load it',
   uninstall: 'Remove',
