@@ -14,9 +14,13 @@ dsh plugin --profile web add dsh-research
 
 Restart `dsh web`, then open **Settings → Research plugins**.
 
+## dsh-research.com
+
+The catalog behind the panel lives at **[dsh-research.com](https://dsh-research.com)** — the same list, in a browser, at [/plugins](https://dsh-research.com/plugins/). Each entry says what the plugin does and where it stops, and there is a walkthrough that goes from an empty machine to a finished talk. The site is generated from one JSON file; the panel fetches that same file, so the two can never drift apart.
+
 ## Why this exists
 
-The official market already installs anything in the community registry, and does it well. What it cannot do is tell a researcher which fifteen of eleven hundred plugins are theirs. That is the part this does.
+The official market already installs anything in the community registry, and does it well. What it cannot do is tell a researcher which of its eleven hundred plugins are theirs. That is the part this does.
 
 ## What an install actually does
 
@@ -49,7 +53,7 @@ The bundle inserts one row (`id: research-market`). Override it from your profil
 
 ## Notes
 
-- The full index, including plugins we do not publish, is browsable at [dsh-research.com/plugins](https://dsh-research.com/plugins/). The in-app catalog is a strict subset: installing someone else's package from a button we drew would make us the first place their bug gets reported.
+- The panel's list and the one at [dsh-research.com/plugins](https://dsh-research.com/plugins/) are the same list, built from the same `market.json`. Nothing reaches it unread: installing someone else's package from a button we drew makes us the first place their bug gets reported.
 - The process layer is adapted from [dsh-market](https://github.com/dsh-market/dsh-market) (MIT), which worked out that `ctx.shell` cannot write to a profile, that a macOS app launched from the Dock has no Homebrew on PATH, that pnpm v10 hangs without a TTY unless `CI` is set, and that Windows `dsh` is a `.cmd` shim.
 - A newly installed plugin needs a restart before it loads; the row says so.
 

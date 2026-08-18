@@ -14,9 +14,13 @@ dsh plugin --profile web add dsh-research
 
 重启 `dsh web`，然后打开**设置 → 科研插件**。
 
+## dsh-research.com
+
+面板背后的这份目录，在 **[dsh-research.com](https://dsh-research.com)** 上也能看：同一份名单，浏览器里打开 [/plugins](https://dsh-research.com/plugins/) 就是。每条写清它能做什么、哪里做不到；另有一篇上手教程，从一台什么都没装的机器讲到一份能放的幻灯片。网站由一个 JSON 文件生成，面板拉的也是同一个文件，两边不会各说各的。
+
 ## 为什么要有它
 
-官方市场已经能装社区注册表里的任何插件，而且做得很好。它做不到的是告诉一个研究生：一千一百个插件里，哪十五个是给你的。这件事才是这个插件在做的。
+官方市场已经能装社区注册表里的任何插件，而且做得很好。它做不到的是告诉一个研究生：一千一百个插件里，哪几个是给你的。这件事才是这个插件在做的。
 
 ## 点「安装」时到底发生了什么
 
@@ -49,7 +53,7 @@ dsh plugin --profile web add dsh-research
 
 ## 说明
 
-- 完整索引（含我们不发布的插件）在 [dsh-research.com/plugins](https://dsh-research.com/plugins/) 上浏览。**app 内的可安装名单是它的严格子集**：用我们画的按钮去装别人的包，出了问题用户第一个找的会是我们。
+- 面板里的名单和 [dsh-research.com/plugins](https://dsh-research.com/plugins/) 上的是同一份，由同一个 `market.json` 生成。**没读过的不收**：用我们画的按钮去装别人的包，出了问题用户第一个找的会是我们。
 - 进程层改编自 [dsh-market](https://github.com/dsh-market/dsh-market)（MIT）。它替我们踩明白了四件事：`ctx.shell` 写不了 profile（那是 Agent 沙箱）、macOS 从 Dock 启动时 PATH 里没有 Homebrew、pnpm v10 无 TTY 时不设 `CI` 会永久卡死、Windows 上 `dsh` 是 `.cmd` shim。
 - 新装的插件要重启后才加载，行内会提示。
 
