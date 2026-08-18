@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { argvProfile, attachedToTerminal, installSpec, normalizeCatalog, pluginArgs, quoteCmdArg, restartCommand, spawnEnv, trustedRestartRequest } from '../src/index.js'
-import { MarketController, PROBE_INTERVAL_MS, filterItems, installCommand } from '../src/client/index.js'
+import { MarketController, PROBE_INTERVAL_MS, filterItems, installCommand, versionNewer } from '../src/client/index.js'
 import type { CatalogResponse, InstallResponse, MarketItem, RestartResponse } from '../src/index.js'
 
 const PAGE = {
@@ -455,6 +455,25 @@ describe('updates', () => {
     const absent = new MarketController(() => Promise.resolve(answer({})))
     await absent.refresh()
     expect(absent.updateFor(absent.state().items[0]!)).toBeUndefined()
+  })
+
+  it('never offers a downgrade when the disk is ahead of the catalog', async () => {
+    // A linked developer checkout, or the minutes between an npm publish and
+    // the feed adopting it: catalog 0.3.3, disk 0.4.1. The old inequality
+    // check rendered an "update to v0.3.3" button here — a downgrade.
+    const controller = new MarketController(() => Promise.resolve(answer({
+      installed: ['dsh-ai4scholar'],
+      installedVersions: { 'dsh-ai4scholar': '0.4.1' },
+    })))
+    await controller.refresh()
+    expect(controller.updateFor(controller.state().items[0]!)).toBeUndefined()
+  })
+
+  it('orders versions numerically, not lexically', () => {
+    expect(versionNewer('0.10.0', '0.9.9')).toBe(true)
+    expect(versionNewer('0.9.9', '0.10.0')).toBe(false)
+    expect(versionNewer('1.0.0', '1.0.0')).toBe(false)
+    expect(versionNewer('1.0.1', '1.0.0')).toBe(true)
   })
 
   it('records the pinned version after a successful install, clearing the offer', async () => {

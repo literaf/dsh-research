@@ -170,6 +170,26 @@ export function createStore<T>(initial: T): Store<T> & { set(next: T): void } {
   }
 }
 
+/**
+ * True when `candidate` is a strictly newer release than `current`.
+ * Dotted numeric segments compared left to right; a non-numeric segment
+ * (prerelease tags and the like) compares as 0, erring toward silence —
+ * a missing offer costs a day, a wrong downgrade button costs trust.
+ */
+export function versionNewer(candidate: string, current: string): boolean {
+  const parse = (v: string): number[] => v.split(/[.-]/).map((part) => {
+    const n = Number(part)
+    return Number.isFinite(n) ? n : 0
+  })
+  const a = parse(candidate)
+  const b = parse(current)
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+    const delta = (a[i] ?? 0) - (b[i] ?? 0)
+    if (delta !== 0) return delta > 0
+  }
+  return false
+}
+
 /** The install command for one entry, or `undefined` when npm name is unknown. */
 export function installCommand(item: MarketItem): string | undefined {
   if (item.npm === undefined) return undefined
@@ -256,16 +276,18 @@ export class MarketController {
 
   /**
    * The catalog version an installed entry should move to, or undefined when
-   * it is current, not installed, or either side has no version to compare.
-   * Inequality rather than semver order on purpose: the catalog's version is
-   * the one whose code was reviewed, so a local build newer than the catalog
-   * still gets the offer back to the reviewed release.
+   * it is current, ahead, not installed, or either side has no version.
+   * Strictly newer, not merely different: a disk version ahead of the catalog
+   * happens to developers running a linked checkout and to anyone in the
+   * minutes between an npm publish and the feed adopting it — and both were
+   * being shown a "downgrade" button. Converging those cases back to the
+   * catalog helps nobody; the feed catches up on its own within minutes.
    */
   updateFor(item: MarketItem): string | undefined {
     const npm = item.npm
     if (npm === undefined || item.version === undefined) return undefined
     const onDisk = this.state().installedVersions[npm]
-    return onDisk !== undefined && onDisk !== item.version ? item.version : undefined
+    return onDisk !== undefined && versionNewer(item.version, onDisk) ? item.version : undefined
   }
 
   /** Current snapshot. */

@@ -21,7 +21,7 @@ import type { MarketSectionFace } from './Section.js'
 import { NS, en, zh } from './locales.js'
 import { installStyles } from './styles.js'
 
-export { DOWN_BUDGET_MS, MarketController, PROBE_INTERVAL_MS, UP_BUDGET_MS, createStore, filterItems, installCommand, fetchCatalogRoute, probeHost } from './store.js'
+export { DOWN_BUDGET_MS, MarketController, PROBE_INTERVAL_MS, UP_BUDGET_MS, createStore, filterItems, installCommand, fetchCatalogRoute, probeHost, versionNewer } from './store.js'
 export type { CatalogFetch, MarketState, RestartPhase, Store } from './store.js'
 export { MarketSection } from './Section.js'
 export type { MarketSectionFace, MarketSectionProps } from './Section.js'
