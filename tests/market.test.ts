@@ -158,6 +158,19 @@ describe('who maintains an entry', () => {
     expect(mine.items[0]?.publisher).toBe('literaf')
   })
 
+  it('marks the dsh-research org as ours, same as the founding account', () => {
+    const moved = {
+      ...PAGE,
+      items: [{
+        ...PAGE.items[0]!,
+        id: 'dsh-research-dsh-research',
+        homepage: 'https://github.com/dsh-research/dsh-research',
+        publisher: { name: 'dsh-research' },
+      }],
+    }
+    expect(normalizeCatalog(moved).items[0]!.ours).toBe(true)
+  })
+
   it('does not claim someone else\'s plugin as ours', () => {
     // The confirmation names the publisher when it is not us, so getting this
     // wrong would tell a reader we stand behind code we do not maintain.

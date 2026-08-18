@@ -77,7 +77,11 @@ function item(raw: unknown): MarketItem | undefined {
     ...(license === undefined ? {} : { license }),
     ...(publisher === undefined ? {} : { publisher }),
     // Our own entries are the ones we can support; the panel says which.
-    ours: publisher === 'literaf' || (repoFromUrl(homepage)?.startsWith('literaf/') ?? false),
+    // Both names are ours: literaf is the founding personal account, the
+    // dsh-research org is where the repositories live from 2026-08-18 on.
+    ours: publisher === 'literaf' || publisher === 'dsh-research'
+      || (repoFromUrl(homepage)?.startsWith('literaf/') ?? false)
+      || (repoFromUrl(homepage)?.startsWith('dsh-research/') ?? false),
   }
 }
 

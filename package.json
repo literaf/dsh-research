@@ -1,6 +1,6 @@
 {
   "name": "dsh-research",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "The research plugin market inside DeepSeek Harness: browse a curated index of literature, reference, writing and workbench plugins in Settings and install them with one click — 科研插件市场，在设置里浏览并一键安装。",
   "type": "module",
   "license": "MIT",
@@ -8,10 +8,10 @@
   "homepage": "https://dsh-research.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/literaf/dsh-research.git"
+    "url": "https://github.com/dsh-research/dsh-research.git"
   },
   "bugs": {
-    "url": "https://github.com/literaf/dsh-research/issues"
+    "url": "https://github.com/dsh-research/dsh-research/issues"
   },
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

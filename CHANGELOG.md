@@ -2,6 +2,14 @@
 
 All notable changes to `dsh-research` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.2] - 2026-08-18
+
+### Changed
+- The repository moved to the dsh-research GitHub organization: `dsh-research/dsh-research`. Old links redirect. The panel's "AI4Scholar 维护" badge now recognizes both the org and the founding account as ours.
+
+### Fixed
+- The update button only appears when the catalog version is strictly newer than the one on disk. A linked checkout — or anyone in the minutes between an npm publish and the feed adopting it — was being offered a downgrade dressed as an update.
+
 ## [0.4.1] - 2026-08-18
 
 ### Added
