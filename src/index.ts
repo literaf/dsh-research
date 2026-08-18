@@ -26,12 +26,12 @@ import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { CATALOG_ROUTE, CATALOG_URL, CATALOG_URL_ZH, INSTALL_ROUTE, REMOVE_ROUTE, RESTART_ROUTE } from './shared/route.js'
 import type { CatalogPage, CatalogResponse, InstallResponse, MarketItem, RestartResponse } from './shared/route.js'
-import { argvProfile, attachedToTerminal, installPackage, removePackage, restartCommand, scheduleRestart, trustedRestartRequest } from './install.js'
+import { argvProfile, attachedToTerminal, installPackage, installSpec, removePackage, restartCommand, scheduleRestart, trustedRestartRequest } from './install.js'
 
 export { CATALOG_ROUTE, CATALOG_URL, CATALOG_URL_ZH, INSTALL_ROUTE, REMOVE_ROUTE, RESTART_ROUTE } from './shared/route.js'
 export type { CatalogPage, CatalogResponse, InstallResponse, MarketItem, RestartResponse } from './shared/route.js'
 export { normalizeCatalog } from './catalog.js'
-export { argvProfile, attachedToTerminal, dshArgv, installPackage, pluginArgs, profileDir, quoteCmdArg, removePackage, restartCommand, scheduleRestart, spawnEnv, trustedRestartRequest } from './install.js'
+export { argvProfile, attachedToTerminal, dshArgv, installPackage, installSpec, pluginArgs, profileDir, quoteCmdArg, removePackage, restartCommand, scheduleRestart, spawnEnv, trustedRestartRequest } from './install.js'
 export type { DshInvocation, InstallOutcome, RestartOutcome } from './install.js'
 
 /** Cordis plugin name used by loader diagnostics. */
@@ -129,6 +129,7 @@ export function apply(ctx: Context, config: Config): void {
           sendJson(response, 200, {
             ...value,
             installed: installedBundles(profile),
+            installedVersions: installedVersionsOf(profile),
             profile,
             attached: attachedToTerminal(),
             restartCommand: restartCommand(),
@@ -179,7 +180,13 @@ export function apply(ctx: Context, config: Config): void {
         }
         installing = npm
         try {
-          const outcome = await installPackage(profile, npm)
+          // Pin to the catalog's version: it is the version the review was
+          // done against, and an exact spec is immune to pnpm 11's
+          // release-age gate serving yesterday's package the day of a fix.
+          const catalogVersion = [...cached.values()]
+            .flatMap((page) => page.value.items)
+            .find((item) => item.npm === npm)?.version
+          const outcome = await installPackage(profile, installSpec(npm, catalogVersion))
           const answer: InstallResponse = outcome.ok
             ? { ok: true, npm }
             : {
@@ -290,6 +297,28 @@ function installedBundles(profile: string): readonly string[] {
     // No profile manifest yet, or unreadable: nothing is known to be installed.
     return []
   }
+}
+
+/**
+ * Actual on-disk version of each installed bundle, so the panel can compare
+ * with the catalog and offer updates. Reads each package's own manifest under
+ * the profile's node_modules; a bundle listed but not yet materialized simply
+ * has no entry.
+ */
+function installedVersionsOf(profile: string): Record<string, string> {
+  const home = process.env['DSH_HOME'] ?? join(homedir(), '.dsh')
+  const versions: Record<string, string> = {}
+  for (const name of installedBundles(profile)) {
+    try {
+      const manifest = JSON.parse(
+        readFileSync(join(home, 'profiles', profile, 'node_modules', name, 'package.json'), 'utf8'),
+      ) as { version?: unknown }
+      if (typeof manifest.version === 'string') versions[name] = manifest.version
+    } catch {
+      // Listed but not installed on disk yet; nothing to compare.
+    }
+  }
+  return versions
 }
 
 /** True when the request's Origin matches its Host — required on every POST. */

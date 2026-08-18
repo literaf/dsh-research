@@ -137,6 +137,22 @@ export function pluginArgs(profile: string, args: readonly string[]): string[] {
 }
 
 /**
+ * The spec `dsh plugin add` receives: pinned to the catalog's version when
+ * the catalog states one. Two reasons. The review that justifies a listing
+ * was done against that version, so that version is what the button installs.
+ * And pnpm 11's minimumReleaseAge gate resolves a bare name to the newest
+ * version older than ~24 hours — the day after a release, a bare name
+ * installs the previous version, which for a hotfix is exactly the version
+ * the fix exists to replace. An exact spec bypasses the gate.
+ * @param npm - package name from the catalog.
+ * @param catalogVersion - the catalog's `latestVersion` for it, if stated.
+ * @returns the argument handed to `dsh plugin add`.
+ */
+export function installSpec(npm: string, catalogVersion?: string): string {
+  return catalogVersion === undefined ? npm : `${npm}@${catalogVersion}`
+}
+
+/**
  * Run `dsh plugin --profile <profile> add <package>`.
  * @param profile - the profile to mutate.
  * @param packageName - npm package to add; the caller must have checked it against the catalog.

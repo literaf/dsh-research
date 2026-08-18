@@ -2,6 +2,14 @@
 
 All notable changes to `dsh-research` are recorded here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.0] - 2026-08-18
+
+### Added
+- Update detection: the catalog reports each installed bundle's on-disk version, and a card whose catalog version differs shows 更新到 vX / Update to vX. Updating runs the same confirmed install; a restart note follows, as with a fresh install. dsh-research itself is a catalog entry, so the panel offers its own updates too.
+
+### Changed
+- Installs are pinned to the catalog's version (`name@version`) instead of the bare name — the review behind a listing was done against that version, and pnpm 11's minimumReleaseAge gate resolves bare names to day-old releases, which during a hotfix serves exactly the version the fix replaces. The copyable command carries the same pin.
+
 ## [0.3.0] - 2026-08-17
 
 `dsh-research` is now **the research plugin market** — a page in the Settings sidebar listing a curated index of research plugins, each installable with one click.

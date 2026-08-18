@@ -39,6 +39,8 @@ export interface MarketSectionFace {
   uninstall(item: MarketItem): void
   /** Whether the entry is already a bundle in the profile. */
   isInstalled(item: MarketItem): boolean
+  /** Catalog version an installed entry should move to, or undefined when current. */
+  updateFor(item: MarketItem): string | undefined
   /** Whether the install and remove buttons are offered at all. */
   canInstall: boolean
   /** Restart the host so pending changes take effect. */
@@ -61,7 +63,7 @@ type Tab = 'discover' | 'installed'
 
 /** A mutation waiting for the reader to agree to it. */
 type Pending =
-  | { readonly kind: 'install' | 'remove'; readonly item: MarketItem }
+  | { readonly kind: 'install' | 'update' | 'remove'; readonly item: MarketItem }
   | { readonly kind: 'restart' }
 
 /**
@@ -106,8 +108,11 @@ function TitleIcon(): JSX.Element {
  */
 function commandFor(pending: Pending, profile: string): string | undefined {
   if (pending.kind === 'restart' || pending.item.npm === undefined) return undefined
-  const verb = pending.kind === 'install' ? 'add' : 'remove'
-  return `dsh plugin --profile ${profile} ${verb} ${pending.item.npm}`
+  if (pending.kind === 'remove') return `dsh plugin --profile ${profile} remove ${pending.item.npm}`
+  // Install and update run the same pinned add; showing the exact spec is the
+  // point of this dialog.
+  const spec = pending.item.version === undefined ? pending.item.npm : `${pending.item.npm}@${pending.item.version}`
+  return `dsh plugin --profile ${profile} add ${spec}`
 }
 
 /**
@@ -117,7 +122,7 @@ function commandFor(pending: Pending, profile: string): string | undefined {
  */
 export function MarketSection(props: MarketSectionProps): JSX.Element {
   const {
-    t, visible, search, copy, install, uninstall, isInstalled,
+    t, visible, search, copy, install, uninstall, isInstalled, updateFor,
     canInstall, restartHost, canRestart, refresh, siteUrl,
   } = props
   const state = props.useMarket((snapshot) => snapshot)
@@ -145,7 +150,7 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
 
   const commit = (): void => {
     if (pending === undefined) return
-    if (pending.kind === 'install') install(pending.item)
+    if (pending.kind === 'install' || pending.kind === 'update') install(pending.item)
     else if (pending.kind === 'remove') uninstall(pending.item)
     else {
       // Copy first, then ask anyway: the host is the authority on whether it
@@ -279,6 +284,7 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
                 {rows.map((item: MarketItem) => {
                   const command = installCommand(item)
                   const done = isInstalled(item)
+                  const update = updateFor(item)
                   const busy = state.installing === item.npm
                   const pending = item.npm !== undefined && state.pendingRestart.includes(item.npm)
                   const failure = state.failures[item.npm ?? '']
@@ -296,6 +302,9 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
                         {item.license !== undefined ? ` · ${item.license}` : ''}
                         {item.stars !== undefined ? ` · ★ ${item.stars}` : ''}
                         {done ? ` · ${pending ? t('restart') : t('installed')}` : ''}
+                        {done && update !== undefined
+                          ? ` · ${t('installedVersion').replace('{v}', state.installedVersions[item.npm ?? ''] ?? '?')}`
+                          : ''}
                       </p>
                       <p className={cls.summary}>{item.summary}</p>
                       {item.detail !== undefined && (
@@ -323,6 +332,13 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
                           >
                             {state.copied === item.id ? t('copied') : t('copy')}
                           </button>
+                          {canInstall && done && update !== undefined && (
+                            <button
+                              type="button" className={cls.primary}
+                              disabled={state.installing !== undefined}
+                              onClick={() => setPending({ kind: 'update', item })}
+                            >{busy ? t('installing') : t('update').replace('{v}', update)}</button>
+                          )}
                           {canInstall && (done
                             ? (
                               <button
@@ -349,7 +365,7 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
           <Confirm
             title={pending.kind === 'restart'
               ? t(byHand ? 'restartManualTitle' : 'confirmRestartTitle')
-              : t(pending.kind === 'install' ? 'confirmInstallTitle' : 'confirmRemoveTitle').replace('{name}', pending.item.repo)}
+              : t(pending.kind === 'install' ? 'confirmInstallTitle' : pending.kind === 'update' ? 'confirmUpdateTitle' : 'confirmRemoveTitle').replace('{name}', pending.item.repo)}
             command={pending.kind === 'restart'
               ? (byHand ? state.restartCommand : undefined)
               : commandFor(pending, state.profile)}
@@ -366,9 +382,13 @@ export function MarketSection(props: MarketSectionProps): JSX.Element {
                   <span>{pending.item.summary}</span>
                   <span>{pending.kind === 'remove'
                     ? t('confirmRemoveBody')
-                    : pending.item.ours
-                      ? t('confirmOurs')
-                      : t('confirmThird').replace('{publisher}', pending.item.publisher ?? pending.item.repo.split('/')[0] ?? '')}</span>
+                    : pending.kind === 'update'
+                      ? t('confirmUpdateBody')
+                        .replace('{from}', state.installedVersions[pending.item.npm ?? ''] ?? '?')
+                        .replace('{to}', pending.item.version ?? '?')
+                      : pending.item.ours
+                        ? t('confirmOurs')
+                        : t('confirmThird').replace('{publisher}', pending.item.publisher ?? pending.item.repo.split('/')[0] ?? '')}</span>
                   <span>{t('confirmProfile')}<b>{state.profile}</b>.</span>
                   <span>{t('confirmWillRun')}</span>
                 </>

@@ -31,6 +31,10 @@ export type MarketLocaleKey =
   | 'progressRemove'
   | 'progressElapsed'
   | 'installed'
+  | 'installedVersion'
+  | 'update'
+  | 'confirmUpdateTitle'
+  | 'confirmUpdateBody'
   | 'restart'
   | 'uninstall'
   | 'uninstalling'
@@ -103,12 +107,15 @@ export const zh: Record<MarketLocaleKey, string> = {
   progressRemove: '正在从 profile 中移除并清理依赖…',
   progressElapsed: '已用 {n} 秒',
   installed: '已安装',
+  installedVersion: '已装 v{v}',
+  update: '更新到 v{v}',
   restart: '重启 dsh 后生效',
   uninstall: '卸载',
   uninstalling: '卸载中…',
   restartNow: '重启 dsh',
   restartTitle: '重启后新装或卸载的插件才会生效',
   confirmInstallTitle: '安装 {name}？',
+  confirmUpdateTitle: '更新 {name}？',
   confirmRemoveTitle: '卸载 {name}？',
   confirmRestartTitle: '重启 dsh？',
   confirmProfile: '这会写入 profile ',
@@ -116,6 +123,7 @@ export const zh: Record<MarketLocaleKey, string> = {
   confirmOurs: '这个插件由 AI4Scholar 维护，出了问题可以直接找我们。安装会改写 profile 的清单并重装依赖，装完需要重启。',
   confirmThird: '这个插件由 {publisher} 维护，不是我们——我们读过它的代码才收录，但它的行为与更新不由我们控制。安装会改写 profile 的清单并重装依赖，装完需要重启。',
   confirmRemoveBody: '会从 profile 中移除该插件，磁盘上的包也会被删除。可以随时重新安装。',
+  confirmUpdateBody: '从 v{from} 更新到 v{to}——目录里的版本就是我们审读过代码的版本。更新后需要重启 dsh 生效。',
   confirmRestartBody: '当前 dsh 进程会退出，随后自动拉起新的。本页会短暂断开，刷新即可回来；正在进行的对话会中断。',
   confirmYes: '确认',
   confirmNo: '取消',
@@ -169,12 +177,15 @@ export const en: Record<MarketLocaleKey, string> = {
   progressRemove: 'Removing it from the profile and cleaning up dependencies…',
   progressElapsed: '{n}s elapsed',
   installed: 'Installed',
+  installedVersion: 'v{v} on disk',
+  update: 'Update to v{v}',
   restart: 'Restart dsh to load it',
   uninstall: 'Remove',
   uninstalling: 'Removing…',
   restartNow: 'Restart dsh',
   restartTitle: 'Installed and removed plugins take effect after a restart',
   confirmInstallTitle: 'Install {name}?',
+  confirmUpdateTitle: 'Update {name}?',
   confirmRemoveTitle: 'Remove {name}?',
   confirmRestartTitle: 'Restart dsh?',
   confirmProfile: 'This writes into profile ',
@@ -182,6 +193,7 @@ export const en: Record<MarketLocaleKey, string> = {
   confirmOurs: 'AI4Scholar maintains this one, so problems with it come back to us. Installing rewrites the profile manifest and reinstalls its dependencies; a restart is needed afterwards.',
   confirmThird: '{publisher} maintains this one, not us — we read its code before listing it, but neither its behaviour nor its updates are ours to control. Installing rewrites the profile manifest and reinstalls its dependencies; a restart is needed afterwards.',
   confirmRemoveBody: 'The plugin leaves the profile and its package is deleted from disk. You can install it again at any time.',
+  confirmUpdateBody: 'Moves it from v{from} to v{to} — the catalog version is the one whose code we reviewed. Restart dsh afterwards for it to take effect.',
   confirmRestartBody: 'This dsh process exits and a fresh one is started. The page drops briefly — reload it — and any conversation in progress is interrupted.',
   confirmYes: 'Confirm',
   confirmNo: 'Cancel',

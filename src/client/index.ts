@@ -75,6 +75,7 @@ export function apply(ctx: ClientContext): void {
     restartHost: () => { void controller.restartHost() },
     canRestart: true,
     isInstalled: (item) => controller.isInstalled(item),
+    updateFor: (item) => controller.updateFor(item),
     canInstall: true,
     refresh: () => { void controller.refresh() },
     siteUrl: SITE_URL,

@@ -91,6 +91,13 @@ export interface CatalogPage {
 export interface CatalogResponse extends CatalogPage {
   /** Bundles already present in the active profile, so installed rows say so. */
   readonly installed: readonly string[]
+  /**
+   * Actual versions on disk, keyed by npm name. The panel compares these with
+   * each entry's catalog `version` to offer an update; separate from
+   * `installed` because a bundle can be listed in the manifest before its
+   * package has materialized on disk.
+   */
+  readonly installedVersions: Readonly<Record<string, string>>
   /** The profile an install would mutate. */
   readonly profile: string
   /**

@@ -29,6 +29,8 @@ export interface MarketState {
   readonly copied?: string
   /** Bundles already in the profile, so installed rows say so. */
   readonly installed: readonly string[]
+  /** On-disk version per installed npm name, for comparing with the catalog. */
+  readonly installedVersions: Readonly<Record<string, string>>
   /** Profile an install mutates, named in the panel so it is never a surprise. */
   readonly profile: string
   /** npm name currently installing, if any. */
@@ -170,7 +172,10 @@ export function createStore<T>(initial: T): Store<T> & { set(next: T): void } {
 
 /** The install command for one entry, or `undefined` when npm name is unknown. */
 export function installCommand(item: MarketItem): string | undefined {
-  return item.npm === undefined ? undefined : `dsh plugin --profile web add ${item.npm}`
+  if (item.npm === undefined) return undefined
+  // Same pin as the host applies (see installSpec): the reviewed version,
+  // immune to pnpm 11 serving yesterday's release.
+  return `dsh plugin --profile web add ${item.npm}${item.version === undefined ? '' : `@${item.version}`}`
 }
 
 /** Case-insensitive filter over the fields a reader would search. */
@@ -185,7 +190,7 @@ export function filterItems(items: readonly MarketItem[], query: string): readon
 export class MarketController {
   readonly store = createStore<MarketState>({
     loading: true, items: [], revision: '', stale: false, query: '',
-    installed: [], profile: '', failures: {}, pendingRestart: [],
+    installed: [], installedVersions: {}, profile: '', failures: {}, pendingRestart: [],
     attached: false, restartCommand: 'dsh web',
   })
 
@@ -235,13 +240,32 @@ export class MarketController {
     this.store.set(answer.ok
       ? {
           ...after,
-          installed: [...after.installed, npm],
-          pendingRestart: [...after.pendingRestart, npm],
+          installed: after.installed.includes(npm) ? after.installed : [...after.installed, npm],
+          // The host pinned the catalog version, so record it: the update
+          // offer clears without waiting for a refetch.
+          installedVersions: item.version === undefined
+            ? after.installedVersions
+            : { ...after.installedVersions, [npm]: item.version },
+          pendingRestart: after.pendingRestart.includes(npm) ? after.pendingRestart : [...after.pendingRestart, npm],
         }
       : {
           ...after,
           failures: { ...after.failures, [npm]: `${answer.error ?? 'install failed'}${answer.output === undefined ? '' : `\n${answer.output}`}` },
         })
+  }
+
+  /**
+   * The catalog version an installed entry should move to, or undefined when
+   * it is current, not installed, or either side has no version to compare.
+   * Inequality rather than semver order on purpose: the catalog's version is
+   * the one whose code was reviewed, so a local build newer than the catalog
+   * still gets the offer back to the reviewed release.
+   */
+  updateFor(item: MarketItem): string | undefined {
+    const npm = item.npm
+    if (npm === undefined || item.version === undefined) return undefined
+    const onDisk = this.state().installedVersions[npm]
+    return onDisk !== undefined && onDisk !== item.version ? item.version : undefined
   }
 
   /** Current snapshot. */
@@ -281,7 +305,7 @@ export class MarketController {
       this.store.set({
         ...rest, loading: false, items: answer.items,
         revision: answer.revision, stale: answer.stale === true,
-        installed: answer.installed, profile: answer.profile,
+        installed: answer.installed, installedVersions: answer.installedVersions, profile: answer.profile,
         attached: answer.attached === true,
         // An older host does not send this; `dsh web` is the launch it is
         // overwhelmingly likely to have had, and the panel only ever shows the

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { argvProfile, attachedToTerminal, normalizeCatalog, pluginArgs, quoteCmdArg, restartCommand, spawnEnv, trustedRestartRequest } from '../src/index.js'
+import { argvProfile, attachedToTerminal, installSpec, normalizeCatalog, pluginArgs, quoteCmdArg, restartCommand, spawnEnv, trustedRestartRequest } from '../src/index.js'
 import { MarketController, PROBE_INTERVAL_MS, filterItems, installCommand } from '../src/client/index.js'
 import type { CatalogResponse, InstallResponse, MarketItem, RestartResponse } from '../src/index.js'
 
@@ -15,6 +15,7 @@ const PAGE = {
       package: { registry: 'npm', name: 'dsh-ai4scholar' },
       publisher: { name: 'literaf' },
       license: 'MIT',
+      latestVersion: '0.3.3',
     },
   ],
   page: { hasMore: false },
@@ -82,7 +83,7 @@ describe('process layer', () => {
 function answer(overrides: Partial<CatalogResponse> = {}): CatalogResponse {
   return {
     items: normalizeCatalog(PAGE).items,
-    revision: '2026-08-17', installed: [], profile: 'web',
+    revision: '2026-08-17', installed: [], installedVersions: {}, profile: 'web',
     attached: false, restartCommand: 'dsh web', ...overrides,
   }
 }
@@ -415,5 +416,59 @@ describe('pnpm workspace compatibility', () => {
 
   it('passes through a subcommand pnpm does not gate', () => {
     expect(pluginArgs('definitely-not-a-profile', ['list'])).toEqual(['list'])
+  })
+})
+
+describe('updates', () => {
+  it('pins the install spec to the catalog version when one is stated', () => {
+    expect(installSpec('dsh-ai4scholar', '0.3.3')).toBe('dsh-ai4scholar@0.3.3')
+    // A catalog with no version falls back to the bare name rather than
+    // inventing a pin.
+    expect(installSpec('dsh-ai4scholar')).toBe('dsh-ai4scholar')
+  })
+
+  it('pins the copyable command the same way the host pins the install', () => {
+    const [item] = normalizeCatalog(PAGE).items
+    expect(installCommand(item!)).toBe('dsh plugin --profile web add dsh-ai4scholar@0.3.3')
+  })
+
+  it('offers an update only when the on-disk version differs from the catalog', async () => {
+    const controller = new MarketController(() => Promise.resolve(answer({
+      installed: ['dsh-ai4scholar'],
+      installedVersions: { 'dsh-ai4scholar': '0.3.1' },
+    })))
+    await controller.refresh()
+    const [item] = controller.state().items
+    expect(controller.updateFor(item!)).toBe('0.3.3')
+  })
+
+  it('stays quiet when on disk already matches, and for entries not installed', async () => {
+    const current = new MarketController(() => Promise.resolve(answer({
+      installed: ['dsh-ai4scholar'],
+      installedVersions: { 'dsh-ai4scholar': '0.3.3' },
+    })))
+    await current.refresh()
+    expect(current.updateFor(current.state().items[0]!)).toBeUndefined()
+
+    const absent = new MarketController(() => Promise.resolve(answer({})))
+    await absent.refresh()
+    expect(absent.updateFor(absent.state().items[0]!)).toBeUndefined()
+  })
+
+  it('records the pinned version after a successful install, clearing the offer', async () => {
+    let calls = 0
+    const controller = new MarketController(
+      () => Promise.resolve(answer({ installed: ['dsh-ai4scholar'], installedVersions: { 'dsh-ai4scholar': '0.3.1' } })),
+      () => { calls += 1; return Promise.resolve({ ok: true, npm: 'dsh-ai4scholar' } as InstallResponse) },
+    )
+    await controller.refresh()
+    const [item] = controller.state().items
+    expect(controller.updateFor(item!)).toBe('0.3.3')
+    await controller.install(item!)
+    expect(calls).toBe(1)
+    expect(controller.state().installedVersions['dsh-ai4scholar']).toBe('0.3.3')
+    expect(controller.updateFor(item!)).toBeUndefined()
+    // The change still needs a restart to take effect, same as a fresh install.
+    expect(controller.state().pendingRestart).toContain('dsh-ai4scholar')
   })
 })
